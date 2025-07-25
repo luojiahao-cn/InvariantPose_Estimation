@@ -59,9 +59,6 @@ p_est = lsqnonlin(fun22, p_init, [], [], options);
 % norm(R_est-R_est2,'fro')
 %% 保存中间结果
 stats.X_opt = X_opt;         % 估计的梯度矩阵
-stats.p_est = p_est;          % 第一阶段位置估计
-stats.BQ_bar = bQ_bar;        % BQ_bar矩阵
-stats.Q_bar = Q_bar;          % 零空间矩阵
 end
 
 %% ----------------------------Functions-------------------------------  %% 
