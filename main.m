@@ -85,7 +85,7 @@ for exp_idx = 1:num_experiments
     % 初始位置和旋转（添加扰动）
     p_init = p_true + 0.03 * init_error; 
     % theta_init = theta_true + 1 * init_error;
-    theta_init = init_error;
+    theta_init = 3 * init_error;
     R_init = MatrixExp3(VecToso3(theta_init));
 
     % 调用LM算法
@@ -126,7 +126,7 @@ for exp_idx = 1:num_experiments
 
     % 存储结果
     results(exp_idx).init_pos_error = init_pos_error;
-    results(exp_idx).init_rot_error = init_rot_gterror;
+    results(exp_idx).init_rot_error = init_rot_error;
     results(exp_idx).lm_pos_error = lm_pos_error;
     results(exp_idx).lm_rot_error = lm_rot_error;
     results(exp_idx).elm_pos_error = elm_pos_error;
