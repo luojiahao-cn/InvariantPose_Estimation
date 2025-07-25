@@ -1,5 +1,4 @@
 clc; clear; close all;
-
 %% 磁铁参数定义
 m_pos = [ 0 , 0.05;
           0 , 0.02;
