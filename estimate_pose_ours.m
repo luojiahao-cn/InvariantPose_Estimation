@@ -55,8 +55,12 @@ fun22 = @(p) obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_total, Q_bar, X_o
 p_est = lsqnonlin(fun22, p_init, [], [], options);
 %% 步骤4: 方向估计（公式24-25）
 [R_est, R_est2] = estiamteR(p_est, m_pos, m_hat, m_norm, num_sensors, b_total, Q_bar, X_opt);
-% norm(R_est-R_true,'fro')
-% norm(R_est-R_est2,'fro')
+norm(R_est-R_true,'fro')
+norm(R_est-R_est2,'fro')
+[b_p_opt, A_p_opt] = calcFieldAndGradient(p_est, m_pos, m_hat, m_norm);
+
+norm(R_true - R_est, 'fro')
+norm(R_true - R_est2, 'fro')
 %% 保存中间结果
 stats.X_opt = X_opt;         % 估计的梯度矩阵
 end
@@ -97,6 +101,8 @@ function [R_opt1, R_opt2] = estiamteR(p_est, m_pos, m_hat, m_norm, num_sensors, 
     M = b_total * Q_bar * (b_p*ones(1,num_sensors)*Q_bar)';
     [U, ~, V] = svd(M);
     R_opt2 = V*diag([1,1,det(V*U')])*U';
-    % norm(bQ_bar - R_opt1'*(b_p*ones(1,num_sensors)*Q_bar))
-    % norm(bQ_bar - R_opt2'*(b_p*ones(1,num_sensors)*Q_bar))
+    
+    norm(b_total * Q_bar - R_opt1' * (b_p*ones(1,num_sensors)*Q_bar))
+    norm(b_total * Q_bar - R_opt2' * (b_p*ones(1,num_sensors)*Q_bar))
+
 end

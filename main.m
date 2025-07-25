@@ -11,9 +11,14 @@ m_hat = [ 0 , 0.7;
 m_hat = m_hat ./ vecnorm(m_hat); % 归一化磁化方向
 m_norm = [1e3 , 8e2];            % 磁矩幅值 [A·m²]
 
-d_list_e = [   0,  1e-3, 2e-3,     0;
-               0,     0,    0,  1e-3;
-               0,     0,    0,     0]; % 传感器偏移 [m]
+d_list_e = [
+    [0; 0; 0],...
+    [1e-3; 0; 0],...
+    [2e-3; 0; 0],...
+    [0; 1e-3; 0],...
+    [0; 0; 1e-3]
+];
+
 row_means = mean(d_list_e, 2);
 d_list = d_list_e - row_means;
 
@@ -83,7 +88,7 @@ for exp_idx = 1:num_experiments
     % init_error = 0;
     
     % 初始位置和旋转（添加扰动）
-    p_init = p_true + 0.03 * init_error; 
+    p_init = p_true + 0.01 * init_error; 
     % theta_init = theta_true + 1 * init_error;
     theta_init = 3 * init_error;
     R_init = MatrixExp3(VecToso3(theta_init));

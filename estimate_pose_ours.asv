@@ -1,4 +1,4 @@
-function [p_est, R_est, stats] = estimate_pose_ours(b_total, d_list, m_pos, m_hat, m_norm, p_init, R_true, p_true)
+function [p_est, R_est, stats] = estimate_pose_ours(b_total, d_list, m_pos, m_hat, m_norm, p_init, R_true, p_true, options)
 % PROPOSED_METHOD_POSE_ESTIMATION 使用所提方法估计传感器姿态（位置和方向）
 %
 % 输入参数：
@@ -27,11 +27,11 @@ for idx = 1:size(pairs,1)
     B_matrix(:, idx) = b_total(:, j) - b_total(:, i);
 end
 %% 阶段检查 对应公式2
-[b_p, A_p] = calcFieldAndGradient(p_true, m_pos, m_hat, m_norm);
+[~, A_p] = calcFieldAndGradient(p_true, m_pos, m_hat, m_norm);
+X_true = R_true'*A_p*R_true;
 % norm(R_true'*b_p*ones(1,num_sensors)+R_true'*A_p*R_true*d_list - b_total, 'fro')
 % norm(R_true'*A_p*R_true*D_matrix - B_matrix, 'fro')
-X_true = R_true'*A_p*R_true;
-%% 步骤2: 构建梯度约束方程
+%% 步骤2: 构建梯度约束方程，计算Q_bar
 % 构建选择矩阵S
 S = [1,0,0,0,0; 0,1,0,0,0; 0,0,1,0,0; 
      0,1,0,0,0; 0,0,0,1,0; 0,0,0,0,1;
@@ -45,50 +45,49 @@ h_vector = B_matrix(:);
 x_opt = pinv(C_matrix) * h_vector;
 X_opt = reshape(S * x_opt, 3, 3);  % 估计梯度（传感器坐标系）
 
-%% 步骤3: 位置估计第一阶段（公式20）
 % 对d_list'进行QR分解
 [Q, ~] = qr(d_list');
 r = rank(d_list); 
 Q_bar = Q(:, r+1:end);
-bQ_bar = b_total * Q_bar;
-
+%% 步骤3: 位置估计第一阶段（公式20）
 % 优化第一阶段位置
-options = optimoptions('lsqnonlin', ...
-    'Algorithm', 'levenberg-marquardt', ...
-    'Display', 'off', ...
-    'MaxIterations', 200, ...
-    'FunctionTolerance', 1e-8, ...
-    'StepTolerance', 1e-8, ...
-    'MaxFunctionEvaluations', 3000);
-
-fun22 = @(p) diag([1,1,1])*obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, bQ_bar, Q_bar, X_opt);
+fun22 = @(p) obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_total, Q_bar, X_opt);
 p_est = lsqnonlin(fun22, p_init, [], [], options);
 %% 步骤4: 方向估计（公式24-25）
-[R_est, R_est2] = estiamteR(p_est, m_pos, m_hat, m_norm, num_sensors, bQ_bar, Q_bar, X_opt);
+[R_est, R_est2] = estiamteR(p_est, m_pos, m_hat, m_norm, num_sensors, b_total, Q_bar, X_opt);
+norm(R_est-R_true,'fro')
+norm(R_est-R_est2,'fro')
+[b_p_opt, A_p_opt] = calcFieldAndGradient(p_est, m_pos, m_hat, m_norm);
 
-R_est
-R_est2
-R_true
+norm(R_true - R_est, 'fro')
+norm(R_true - R_est2, 'fro')
 %% 保存中间结果
 stats.X_opt = X_opt;         % 估计的梯度矩阵
-stats.A_p_opt = A_p_opt;     % 参考点的全局梯度矩阵
-stats.p_est = p_est;          % 第一阶段位置估计
-stats.BQ_bar = bQ_bar;        % BQ_bar矩阵
-stats.Q_bar = Q_bar;          % 零空间矩阵
 end
 
 %% ----------------------------Functions-------------------------------  %% 
-%% 目标函数（公式22）
-function res = obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, bQ_bar, Q_bar, X)
+%% calc magntic field and gradient tensor
+function [b_p, A_p] = calcFieldAndGradient(p, m_pos, m_hat, m_norm)
+    b_p = zeros(3, 1);
+    A_p = zeros(3, 3);
+    for i = 1:size(m_pos,2)
+        r = p - m_pos(:, i);
+        [B, gradB] = dipole_b_and_gradb(r, m_hat(:, i), m_norm(i));
+        b_p = b_p + B;
+        A_p = A_p + gradB;
+    end
+end
+%% estimate p
+function res = obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_total, Q_bar, X)
     [b_p, A_p] = calcFieldAndGradient(p, m_pos, m_hat, m_norm);
     % 公式(22)的三个残差项
-    term1 = norm(b_p * ones(1, num_sensors) * Q_bar, 'fro') - norm(bQ_bar, 'fro');
+    term1 = norm(b_p * ones(1, num_sensors) * Q_bar, 'fro') - norm(b_total * Q_bar, 'fro');
     term2 = trace(A_p*A_p) - trace(X*X);
     term3 = det(A_p) - det(X);
     res = [term1; term2; term3];
 end
 %% Estimate R
-function [R_opt1, R_opt2] = estiamteR(p_est, m_pos, m_hat, m_norm, num_sensors, bQ_bar, Q_bar, X)
+function [R_opt1, R_opt2] = estiamteR(p_est, m_pos, m_hat, m_norm, num_sensors, b_total, Q_bar, X)
     [b_p, A_p] = calcFieldAndGradient(p_est, m_pos, m_hat, m_norm);
     % estimate R using R^T A R = X
     [U, LA] = eig(A_p);
@@ -99,18 +98,9 @@ function [R_opt1, R_opt2] = estiamteR(p_est, m_pos, m_hat, m_norm, num_sensors, 
     V = V(:,IndX);
     R_opt1 = U*diag(sign(diag(V'*U)))*V';
     % estimate R using SVD
-    M = bQ_bar*(b_p*ones(1,num_sensors)*Q_bar)';
-    [U, ~, V] = svd(M);
-    R_opt2 = V*diag([1,1,det(V*U')])*U';
-end
-%%
-function [b_p, A_p] = calcFieldAndGradient(p, m_pos, m_hat, m_norm)
-    b_p = zeros(3, 1);
-    A_p = zeros(3, 3);
-    for i = 1:size(m_pos,2)
-        r = p - m_pos(:, i);
-        [B, gradB] = dipole_b_and_gradb(r, m_hat(:, i), m_norm(i));
-        b_p = b_p + B;
-        A_p = A_p + gradB;
+    for i 
+        M = b_total * Q_bar * (R_opt1' * b_p*ones(1,num_sensors)*Q_bar)';
+        [U, ~, V] = svd(M);
+        R_opt2 = V*diag([1,1,det(V*U')])*U';
     end
 end
