@@ -1,4 +1,4 @@
-function [p_est, R_est, stats] = estimate_pose_elm(b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init)
+function [p_est, R_est, stats] = estimate_pose_elm(b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options)
 % ESTIMATE_POSE_ELM 通过优化传感器间的磁场差估计姿态（同时优化位置和旋转）
 %
 % 输入参数：

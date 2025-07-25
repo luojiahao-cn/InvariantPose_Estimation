@@ -18,7 +18,6 @@ row_means = mean(d_list_e, 2);
 d_list = d_list_e - row_means;
 
 
-
 theta_true = [0.1; 0.2; 0.3]; % 真实旋转向量 [rad]
 p_true = [0.05; -0.03; 0.04];    % 传感器阵列参考点真实位置 [m]
 R_true = MatrixExp3(VecToso3(theta_true));
@@ -68,92 +67,78 @@ for sensor_idx = 1:num_sensors
     gradb_total(:, :, sensor_idx) = R_true' * gradB_t * R_true;
 end
 
-%% 计算磁场模值作为权重
-B_norms = vecnorm(B_total);  % 各传感器磁场模值（1×num_sensors向量）
-
-% 计算加权几何中心
-weighted_center = zeros(3,1);
-for i = 1:num_sensors
-    weighted_center = weighted_center + B_norms(i) * d_list_e(:,i);
-end
-weighted_center = weighted_center / sum(B_norms);
-
-d_list_our = d_list_e - weighted_center;
-
-
 %% 多次实验设置
-num_experiments = 2; % 实验次数
+num_experiments = 50; % 实验次数
 results = struct();
 
+options = optimoptions('lsqnonlin', ...
+    'Algorithm', 'levenberg-marquardt',...
+    'Display', 'off');
+
 for exp_idx = 1:num_experiments
-%     fprintf('\n===== 实验 %d/%d =====', exp_idx, num_experiments);
+    fprintf('\n===== 实验 %d/%d =====', exp_idx, num_experiments);
     
     % 生成随机初始误差
-%     init_error =  0.2+ 0.2 * rand(3,1);
-    init_error = 0;
+    init_error =  -1 + 2 * rand(3,1);
+    % init_error = 0;
     
     % 初始位置和旋转（添加扰动）
-    p_init = p_true + 0.1 * init_error; 
-    theta_init = theta_true + 0.1* init_error;
+    p_init = p_true + 0.03 * init_error; 
+    % theta_init = theta_true + 1 * init_error;
+    theta_init = init_error;
     R_init = MatrixExp3(VecToso3(theta_init));
-%     
-%     % 调用LM算法
-%     [p_lm, R_lm, stats_lm] = estimate_pose_lm(...
-%         b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init);
-%     
-%     % 调用ELM算法
-%     [p_elm, R_elm, stats_elm] = estimate_pose_elm(...
-%         b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init);
-%     
-%     % 调用融合算法
-%     [p_union, R_union, stats_union] = estimate_pose_union(...
-%         b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init);
-% 
-% 
+
+    % 调用LM算法
+    [p_lm, R_lm, stats_lm] = estimate_pose_lm(...
+        b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options);
+
+    % 调用ELM算法
+    [p_elm, R_elm, stats_elm] = estimate_pose_elm(...
+        b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options);
+
+    % 调用融合算法
+    [p_union, R_union, stats_union] = estimate_pose_union(...
+        b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options);
+
     % 调用所提算法
     [p_prop, R_prop, stats_prop] = estimate_pose_ours(...
-        b_total, d_list, m_pos, m_hat, m_norm, p_init);
-
-    disp (p_prop)
-    disp (p_prop - p_true)
+        b_total, d_list, m_pos, m_hat, m_norm, p_init, R_true, p_true, options);
     
     % 计算初始误差
     init_pos_error = norm(p_init - p_true);
-    init_rot_error = trace(eye(3) - R_init' * R_true);
+    init_rot_error = norm(R_init - R_true,'fro');
     
-%     % 计算LM算法结果误差
-%     lm_pos_error = norm(p_lm - p_true);
-%     lm_rot_error = trace(eye(3) - R_lm' * R_true);
-%     
-%     % 计算ELM算法结果误差
-%     elm_pos_error = norm(p_elm - p_true);
-%     elm_rot_error = trace(eye(3) - R_elm' * R_true);
-% 
-%     % 计算融合算法结果误差
-%     union_pos_error = norm(p_union - p_true);
-%     union_rot_error = trace(eye(3) - R_union' * R_true);
-%     
+    % 计算LM算法结果误差
+    lm_pos_error = norm(p_lm - p_true);
+    lm_rot_error = norm(R_lm - R_true,'fro');
+
+    % 计算ELM算法结果误差
+    elm_pos_error = norm(p_elm - p_true);
+    elm_rot_error = norm(R_elm - R_true,'fro');
+
+    % 计算融合算法结果误差
+    union_pos_error = norm(p_union - p_true);
+    union_rot_error = norm(R_union - R_true,'fro');
+
     % 计算所提算法结果误差
     prop_pos_error = norm(p_prop - p_true);
-    prop_rot_error = trace(eye(3) - R_prop' * R_true);
+    prop_rot_error = norm(R_prop - R_true,'fro');
 
-
-%     
-%     % 存储结果
-%     results(exp_idx).init_pos_error = init_pos_error;
-%     results(exp_idx).init_rot_error = init_rot_error;
-%     results(exp_idx).lm_pos_error = lm_pos_error;
-%     results(exp_idx).lm_rot_error = lm_rot_error;
-%     results(exp_idx).elm_pos_error = elm_pos_error;
-%     results(exp_idx).elm_rot_error = elm_rot_error;
-%     results(exp_idx).union_pos_error = union_pos_error;
-%     results(exp_idx).union_rot_error = union_rot_error;
-%     results(exp_idx).prop_pos_error = prop_pos_error;
-%     results(exp_idx).prop_rot_error = prop_rot_error;
+    % 存储结果
+    results(exp_idx).init_pos_error = init_pos_error;
+    results(exp_idx).init_rot_error = init_rot_gterror;
+    results(exp_idx).lm_pos_error = lm_pos_error;
+    results(exp_idx).lm_rot_error = lm_rot_error;
+    results(exp_idx).elm_pos_error = elm_pos_error;
+    results(exp_idx).elm_rot_error = elm_rot_error;
+    results(exp_idx).union_pos_error = union_pos_error;
+    results(exp_idx).union_rot_error = union_rot_error;
+    results(exp_idx).prop_pos_error = prop_pos_error;
+    results(exp_idx).prop_rot_error = prop_rot_error;
 end
 
 %% 调用文本输出函数
-% display_statistical_summary(results, num_experiments);
+display_statistical_summary(results, num_experiments);
 
 %% 调用图像输出函数
-% plot_error_distributions(results);
+plot_error_distributions(results);
