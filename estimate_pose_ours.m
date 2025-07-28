@@ -1,4 +1,4 @@
-function [p_est, R_est, stats] = estimate_pose_ours(b_total, d_list, m_pos, m_hat, m_norm, p_init, R_true, p_true, options)
+function [p_est, R_est3, stats] = estimate_pose_ours(b_total, d_list, m_pos, m_hat, m_norm, p_init, R_true, p_true, options)
 % PROPOSED_METHOD_POSE_ESTIMATION 使用所提方法估计传感器姿态（位置和方向）
 %
 % 输入参数：
@@ -60,15 +60,15 @@ C = b_p * ones(1, num_sensors) * Q_bar;
 [R_est, R_est2] = estiamteR(p_est, m_pos, m_hat, m_norm, num_sensors, b_total, Q_bar, X_opt);
 % norm(R_est-R_true,'fro')
 % norm(R_est-R_est2,'fro')
-R_est3 = estimateR_iter(p_est, m_pos, m_hat, m_norm, num_sensors, b_total, Q_bar, X_opt);
-
-R_est4 = softProcrustesGrad(R_est,B,C,A_p,X_opt,norm(B*C','fro')/(norm(A_p,'fro')*norm(X_opt,'fro')));
+mu = norm(B,'fro')*norm(C,'fro')/(norm(X_opt, 'fro')*norm(A_p, 'fro'));
+R_est3 = estimateR_iter(p_est, m_pos, m_hat, m_norm, num_sensors, b_total, Q_bar, X_opt, mu);
+% R_est4 = softProcrustesGrad(R_est,B,C,A_p,X_opt,mu);
 % R_est5 = softProcrustesLM(R_est,B,C,A_p,X_opt,norm(B*C','fro')/norm(A_p*X_opt,'fro'));
-clc
-norm(R_true - R_est, 'fro')
+% clc
+% norm(R_true - R_est, 'fro')
 % norm(R_true - R_est2, 'fro')
-norm(R_true - R_est3, 'fro')
-norm(R_true - R_est4, 'fro')
+% norm(R_true - R_est3, 'fro')
+% norm(R_true - R_est4, 'fro')
 % norm(R_true - R_est5, 'fro')
 %% 保存中间结果
 stats.X_opt = X_opt;         % 估计的梯度矩阵
@@ -96,7 +96,8 @@ function res = obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_total, Q_bar, X
     res = [term1; term2; term3];
 end
 %% Estimate R
-function R_opt = estimateR_iter(p_est, m_pos, m_hat, m_norm, num_sensors, b_total, Q_bar, X)
+function R_opt = estimateR_iter(p_est, m_pos, m_hat, m_norm, num_sensors, b_total, Q_bar, X, mu)
+    %% Initial condition
     [b_p, A_p] = calcFieldAndGradient(p_est, m_pos, m_hat, m_norm);
     [U, LA] = eig(A_p);
     [V, LX] = eigs(X);
@@ -105,16 +106,34 @@ function R_opt = estimateR_iter(p_est, m_pos, m_hat, m_norm, num_sensors, b_tota
     [~, IndX] = sort(diag(LX), 'ascend');
     V = V(:,IndX);
     R = U*diag(sign(diag(V'*U)))*V';
-    
-    % tr(BC^T R + ARXR^T) = tr((BC^T + XR^TA)R) = tr(MR)
+    if det(R) < 0
+        R = -R;
+    end
+    %% Iterative method:
+    skew = @(X) 0.5*(X-X');
+    % tr(BC^T R + muARXR^T) = tr((BC^T + muXR^TA)R) = tr(MR)
     B = b_total * Q_bar * (b_p*ones(1,num_sensors)*Q_bar)';
-    % mu = norm(B,'fro')/ (norm(X,'fro') * norm(A_p, 'fro'));
-    mu = 1;
+    f = @(R) -trace((B+mu*X*R'*A_p)*R);
     for i = 1:20
         R_opt = R;
+        % Procrustes
         M = B + mu * X * R' * A_p;
         [U, ~, V] = svd(M);
-        R = V*diag([1,1,det(V*U')])*U';
+        R = V*diag([1,1,det(V*U')])*U'; % R_{k+1}^{-}
+        Omega = MatrixLog3(R*R_opt');
+        % Armijo backtracking method
+        alpha = 1;
+        cArmijo = 0.1;
+        gradf = 2*skew(R'*(B'+2*mu*A_p*R*X));
+        while(f(R_opt*MatrixExp3(alpha*Omega)) >= (f(R_opt) + cArmijo*alpha*1/2*trace(gradf'*Omega)))
+            tau = 0.5;
+            alpha = tau * alpha;
+            if alpha <= 1e-4
+                break
+            end
+        end
+        R = R_opt*MatrixExp3(alpha*Omega);
+
         if norm(R - R_opt, 'fro') < 0.01
             R_opt = R;
             disp('converged')
@@ -133,6 +152,9 @@ function [R_opt1, R_opt2] = estiamteR(p_est, m_pos, m_hat, m_norm, num_sensors, 
     [~, IndX] = sort(diag(LX), 'ascend');
     V = V(:,IndX);
     R_opt1 = U*diag(sign(diag(V'*U)))*V';
+    if det(R_opt1) < 0
+        R_opt1 = -R_opt1;
+    end
     % estimate R using SVD
     M = b_total * Q_bar * (b_p*ones(1,num_sensors)*Q_bar)';
     [U, ~, V] = svd(M);
