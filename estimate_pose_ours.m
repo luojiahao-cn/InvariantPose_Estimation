@@ -60,11 +60,11 @@ C = b_p * ones(1, num_sensors) * Q_bar;
 [R_est, R_est2] = estiamteR(p_est, m_pos, m_hat, m_norm, num_sensors, b_total, Q_bar, X_opt);
 % norm(R_est-R_true,'fro')
 % norm(R_est-R_est2,'fro')
-mu = norm(B,'fro')*norm(C,'fro')/(norm(X_opt, 'fro')*norm(A_p, 'fro'));
+s = svd(C*B');
+mu = 0.5*s(1,1)/(norm(X_opt)*norm(A_p));
 R_est3 = estimateR_iter(p_est, m_pos, m_hat, m_norm, num_sensors, b_total, Q_bar, X_opt, mu);
-% R_est4 = softProcrustesGrad(R_est,B,C,A_p,X_opt,mu);
+R_est4 = softProcrustesGrad(R_est,B,C,A_p,X_opt,mu);
 % R_est5 = softProcrustesLM(R_est,B,C,A_p,X_opt,norm(B*C','fro')/norm(A_p*X_opt,'fro'));
-% clc
 % norm(R_true - R_est, 'fro')
 % norm(R_true - R_est2, 'fro')
 % norm(R_true - R_est3, 'fro')
@@ -106,39 +106,24 @@ function R_opt = estimateR_iter(p_est, m_pos, m_hat, m_norm, num_sensors, b_tota
     [~, IndX] = sort(diag(LX), 'ascend');
     V = V(:,IndX);
     R = U*diag(sign(diag(V'*U)))*V';
-    if det(R) < 0
-        R = -R;
-    end
     %% Iterative method:
-    skew = @(X) 0.5*(X-X');
-    % tr(BC^T R + muARXR^T) = tr((BC^T + muXR^TA)R) = tr(MR)
-    B = b_total * Q_bar * (b_p*ones(1,num_sensors)*Q_bar)';
-    f = @(R) -trace((B+mu*X*R'*A_p)*R);
-    for i = 1:20
-        R_opt = R;
-        % Procrustes
-        M = B + mu * X * R' * A_p;
-        [U, ~, V] = svd(M);
-        R = V*diag([1,1,det(V*U')])*U'; % R_{k+1}^{-}
-        Omega = MatrixLog3(R*R_opt');
-        % Armijo backtracking method
-        alpha = 1;
-        cArmijo = 0.1;
-        gradf = 2*skew(R'*(B'+2*mu*A_p*R*X));
-        while(f(R_opt*MatrixExp3(alpha*Omega)) >= (f(R_opt) + cArmijo*alpha*1/2*trace(gradf'*Omega)))
-            tau = 0.5;
-            alpha = tau * alpha;
-            if alpha <= 1e-4
-                break
-            end
-        end
-        R = R_opt*MatrixExp3(alpha*Omega);
-
-        if norm(R - R_opt, 'fro') < 0.01
-            R_opt = R;
-            disp('converged')
+    At = A_p - min(eig(A_p));
+    Xt = X - min(eig(X));
+    B = (b_p*ones(1,num_sensors)*Q_bar)*(b_total * Q_bar)';
+    M = @(R) B + 2*mu*At*R*Xt;
+    f = @(R) trace((B+mu*A_p*R*X)'*R);
+    % initialize
+    R_opt = R;
+    iter = 20;
+    while iter > 0
+        [U, ~, V] = svd(M(R));
+        R_opt = U*diag([1,1,det(U*V')])*V';
+        if norm(R - R_opt, 'fro')^2 < 0.01 % converged
             break
         end
+        % update variable
+        R = R_opt;
+        iter = iter - 1;
     end
 end
 
@@ -152,9 +137,9 @@ function [R_opt1, R_opt2] = estiamteR(p_est, m_pos, m_hat, m_norm, num_sensors, 
     [~, IndX] = sort(diag(LX), 'ascend');
     V = V(:,IndX);
     R_opt1 = U*diag(sign(diag(V'*U)))*V';
-    if det(R_opt1) < 0
-        R_opt1 = -R_opt1;
-    end
+    % if det(R_opt1) < 0
+    %     R_opt1 = -R_opt1;
+    % end
     % estimate R using SVD
     M = b_total * Q_bar * (b_p*ones(1,num_sensors)*Q_bar)';
     [U, ~, V] = svd(M);
@@ -197,8 +182,11 @@ function R = softProcrustesGrad(R0,B,C,A,X,mu,maxIter,tol)
     cArmijo = 0.1;       beta = 0.5;      % line‑search params
     for k = 1:maxIter
         % 1.1 Riemannian gradient (body‑frame) --------------------
-        G  = skew(R.'*C*B.') + ...
-              2*mu*skew(X*R.'*A - A*R*X);     % Eq.(2) in说明
+        % G  = skew(R.'*C*B.') + ...
+        %       2*mu*skew(X*R.'*A - A*R*X);     % Eq.(2) in说明
+
+        M = C*B' + mu*A*R*X;
+        G = 2*skew(R'*(M+mu*A*R*X));
         g  = vee(G);                          % 3×1 vector form
         ng = norm(g);
 
