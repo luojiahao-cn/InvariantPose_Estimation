@@ -1,4 +1,4 @@
-function [p_est, R_est, stats] = estimate_pose_union(b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options)
+function [p_est, R_est, stats] = estimate_pose_union(b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p)
 % ESTIMATE_POSE_UNION 融合LM和ELM方法的姿态估计算法
 %
 % 输入参数：
@@ -42,7 +42,9 @@ for idx = 1:num_pairs
 end
 
 %% ===== 优化设置 =====
-x0 = [theta_init; p_init];  % 初始状态
+x0 = [theta_init; p_init];
+lb = [-inf(3,1); lb_p(:)];
+ub = [inf(3,1); ub_p(:)];
 
 % 初始化动态权重
 current_w_lm = params.w_lm;
@@ -52,7 +54,7 @@ iteration_count = 0;
 %% ===== 运行优化 =====
 [x_opt, ~, ~, exitflag, output] = lsqnonlin(...
     @(x)fused_objective(x), ...
-    x0, [], [], options);
+    x0, lb, ub, options);
 
 % 提取结果
 theta_opt = x_opt(1:3);

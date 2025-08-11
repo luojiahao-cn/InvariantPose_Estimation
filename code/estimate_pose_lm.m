@@ -1,4 +1,4 @@
-function [p_opt, R_opt, stats] = estimate_pose_lm(b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options)
+function [p_opt, R_opt, stats] = estimate_pose_lm(b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p)
 % ESTIMATE_POSE_LM 使用Levenberg-Marquardt算法估计传感器姿态
 %
 % 输入参数：
@@ -24,6 +24,10 @@ end
 % 组合初始变量
 x0 = [theta_init; p_init];
 
+% 设置变量上下界
+lb = [-inf(3,1); lb_p(:)];
+ub = [inf(3,1); ub_p(:)];
+
 % 检查传感器数量
 num_sensors = size(b_total, 2);
 if num_sensors ~= size(d_list, 2)
@@ -44,7 +48,7 @@ history.resnorm = [];
 % 优化计算
 [x_opt, resnorm, residual, exitflag, output] = lsqnonlin(...
     @(x)lm_objective(x, m_pos, m_hat, m_norm, d_list, b_total), ...
-    x0, [], [], options);
+    x0, lb, ub, options);
 
 % 提取结果
 omega_opt = x_opt(1:3);

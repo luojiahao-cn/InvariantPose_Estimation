@@ -1,4 +1,4 @@
-function [p_est, R_est, stats] = estimate_pose_elm(b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options)
+function [p_est, R_est, stats] = estimate_pose_elm(b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p)
 % ESTIMATE_POSE_ELM 通过优化传感器间的磁场差估计姿态（同时优化位置和旋转）
 %
 % 输入参数：
@@ -43,11 +43,13 @@ options = optimoptions('lsqnonlin', ...
 
 % 组合初始变量（旋转向量和位置）
 x0 = [theta_init; p_init];
+lb = [-inf(3,1); lb_p(:)];
+ub = [inf(3,1); ub_p(:)];
 
 % 运行优化
 [x_opt, resnorm, residual, exitflag, output] = lsqnonlin(...
     @(x)elm_objective(x, m_pos, m_hat, m_norm, d_list, delta_d, delta_b_meas), ...
-    x0, [], [], options);
+    x0, lb, ub, options);
 
 % 提取结果
 theta_opt = x_opt(1:3);

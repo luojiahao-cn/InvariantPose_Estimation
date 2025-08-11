@@ -16,7 +16,8 @@ d_list_e = [
     [1e-3; 0; 0],...
     [2e-3; 0; 0],...
     [0; 1e-3; 0],...
-    [0; 0; 1e-3]
+    [0; 0; 1e-3],...
+    [1e-3; 0; 1e-3]
 ];
 
 row_means = mean(d_list_e, 2);
@@ -82,35 +83,45 @@ options = optimoptions('lsqnonlin', ...
     'Algorithm', 'levenberg-marquardt',...
     'Display', 'off');
 
+% 工作空间约束参数
+workspace_center = [0; 0; 0];
+workspace_radius = 1.0;
+
+% 增加位置约束
+lb_p = workspace_center - workspace_radius; % 下界
+ub_p = workspace_center + workspace_radius; % 上界
+
 for exp_idx = 1:num_experiments
     fprintf('\n===== 实验 %d/%d =====\n', exp_idx, num_experiments);
     
     % 生成随机初始误差
     init_error =  -1 + 2 * rand(3,1);
-    % init_error = 0;
+    % init_error = zeros(3,1);
     
     % 初始位置和旋转（添加扰动）
-    p_init = p_true + 0.1 * init_error; 
+    p_init = p_true + 0.01 * init_error; 
     % theta_init = theta_true + 1 * init_error;
-    theta_init = pi * init_error;
+    theta_init = theta_true + pi * init_error;
     R_init = MatrixExp3(VecToso3(theta_init));
 
     % 调用LM算法
     [p_lm, R_lm, stats_lm] = estimate_pose_lm(...
-        b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options);
-
-    visualize_pose(m_pos, m_hat, m_norm, p_true, R_true, p_lm, R_lm, d_list);
+        b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p);
+    % visualize_pose(m_pos, m_hat, m_norm, p_true, R_true, p_lm, R_lm, d_list);
 
     % 调用ELM算法
     [p_elm, R_elm, stats_elm] = estimate_pose_elm(...
-        b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options);
+        b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p);
+    % visualize_pose(m_pos, m_hat, m_norm, p_true, R_true, p_elm, R_elm, d_list);
 
     % [p_union, R_union, stats_union] = estimate_pose_union(...
-    %     b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options);
+    %     b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p);
+    % visualize_pose(m_pos, m_hat, m_norm, p_true, R_true, p_union, R_union, d_list);
 
     % 调用所提算法
     [p_prop, R_prop, stats_prop] = estimate_pose_ours(...
-        b_total, d_list, m_pos, m_hat, m_norm, p_init, R_true, p_true, options);
+        b_total, d_list, m_pos, m_hat, m_norm, p_init, R_true, p_true, options, lb_p, ub_p);
+    visualize_pose(m_pos, m_hat, m_norm, p_true, R_true, p_prop, R_prop, d_list);
     
     % 计算初始误差
     init_pos_error = norm(p_init - p_true);
