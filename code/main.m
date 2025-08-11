@@ -33,6 +33,8 @@ sensor_positions = p_true + R_true * d_list;
 num_sensors = size(sensor_positions, 2);
 num_magnets = size(m_pos, 2);
 
+% 设置随机种子
+rng(2025);  
 
 %% 生成磁铁测量数据
 
@@ -73,7 +75,7 @@ for sensor_idx = 1:num_sensors
 end
 
 %% 多次实验设置
-num_experiments = 50; % 实验次数
+num_experiments = 10; % 实验次数
 results = struct();
 
 options = optimoptions('lsqnonlin', ...
@@ -81,29 +83,30 @@ options = optimoptions('lsqnonlin', ...
     'Display', 'off');
 
 for exp_idx = 1:num_experiments
-    fprintf('\n===== 实验 %d/%d =====', exp_idx, num_experiments);
+    fprintf('\n===== 实验 %d/%d =====\n', exp_idx, num_experiments);
     
     % 生成随机初始误差
     init_error =  -1 + 2 * rand(3,1);
     % init_error = 0;
     
     % 初始位置和旋转（添加扰动）
-    p_init = p_true + 0.01 * init_error; 
+    p_init = p_true + 0.1 * init_error; 
     % theta_init = theta_true + 1 * init_error;
-    theta_init = 3 * init_error;
+    theta_init = pi * init_error;
     R_init = MatrixExp3(VecToso3(theta_init));
 
     % 调用LM算法
     [p_lm, R_lm, stats_lm] = estimate_pose_lm(...
         b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options);
 
+    visualize_pose(m_pos, m_hat, m_norm, p_true, R_true, p_lm, R_lm, d_list);
+
     % 调用ELM算法
     [p_elm, R_elm, stats_elm] = estimate_pose_elm(...
         b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options);
 
-    % 调用融合算法
-    [p_union, R_union, stats_union] = estimate_pose_union(...
-        b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options);
+    % [p_union, R_union, stats_union] = estimate_pose_union(...
+    %     b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options);
 
     % 调用所提算法
     [p_prop, R_prop, stats_prop] = estimate_pose_ours(...
@@ -122,8 +125,8 @@ for exp_idx = 1:num_experiments
     elm_rot_error = norm(R_elm - R_true,'fro');
 
     % 计算融合算法结果误差
-    union_pos_error = norm(p_union - p_true);
-    union_rot_error = norm(R_union - R_true,'fro');
+    % union_pos_error = norm(p_union - p_true);
+    % union_rot_error = norm(R_union - R_true,'fro');
 
     % 计算所提算法结果误差
     prop_pos_error = norm(p_prop - p_true);
@@ -136,14 +139,23 @@ for exp_idx = 1:num_experiments
     results(exp_idx).lm_rot_error = lm_rot_error;
     results(exp_idx).elm_pos_error = elm_pos_error;
     results(exp_idx).elm_rot_error = elm_rot_error;
-    results(exp_idx).union_pos_error = union_pos_error;
-    results(exp_idx).union_rot_error = union_rot_error;
+    % results(exp_idx).union_pos_error = union_pos_error;
+    % results(exp_idx).union_rot_error = union_rot_error;
     results(exp_idx).prop_pos_error = prop_pos_error;
     results(exp_idx).prop_rot_error = prop_rot_error;
+
+    lm_field_error = calculate_field_errors(p_lm, R_lm, b_total, d_list, m_pos, m_hat, m_norm);
+    elm_field_error = calculate_field_errors(p_elm, R_elm, b_total, d_list, m_pos, m_hat, m_norm);
+    % union_field_error = calculate_field_errors(p_union, R_union, b_total, d_list, m_pos, m_hat, m_norm);
+    prop_field_error = calculate_field_errors(p_prop, R_prop, b_total, d_list, m_pos, m_hat, m_norm);
+
+    results(exp_idx).lm_field_error = lm_field_error;
+    results(exp_idx).elm_field_error = elm_field_error;
+    % results(exp_idx).union_field_error = union_field_error;
+    results(exp_idx).prop_field_error = prop_field_error;
+
 end
 
-%% 调用文本输出函数
 display_statistical_summary(results, num_experiments);
-
-%% 调用图像输出函数
 plot_error_distributions(results);
+

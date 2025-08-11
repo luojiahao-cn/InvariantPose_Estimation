@@ -205,7 +205,7 @@ function R = softProcrustesGrad(R0,B,C,A,X,mu,maxIter,tol)
             end
             alpha = alpha*beta;
             if alpha < 1e-12
-                warning('Step size underflow — stop.'); 
+                % warning('Step size underflow — stop.'); 
                 R = Rnew;  return;
             end
         end
