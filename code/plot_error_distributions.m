@@ -1,5 +1,5 @@
 function plot_error_distributions(results)
-% 改进的误差分布可视化函数
+% 多算法自适应误差分布可视化
 
 fields = fieldnames(results);
 algorithms = {};
@@ -28,6 +28,19 @@ for i = 1:numel(fields)
     end
 end
 
+% 算法显示名映射表
+alg_map = containers.Map({'init','lm','elm','ours','Rlm'}, ...
+                         {'初始','LM','ELM','所提','RLm'});
+alg_labels = cell(size(algorithms));
+for i = 1:numel(algorithms)
+    x = algorithms{i};
+    if isKey(alg_map, x)
+        alg_labels{i} = alg_map(x);
+    else
+        alg_labels{i} = x;
+    end
+end
+
 figure('Color', 'white', 'Position', [100, 100, 1600, 800], 'Name', '误差分布');
 
 % 位置误差分布 - KDE
@@ -40,7 +53,7 @@ end
 title('位置误差分布 (KDE)', 'FontSize', 14);
 xlabel('位置误差 (m)', 'FontSize', 12);
 ylabel('概率密度', 'FontSize', 12);
-legend(strrep(algorithms, 'prop', '所提算法'), 'FontSize', 10, 'Location', 'best');
+legend(alg_labels, 'FontSize', 10, 'Location', 'best');
 grid on; box on;
 
 % 旋转误差分布 - KDE
@@ -52,14 +65,14 @@ end
 title('旋转误差分布 (KDE)', 'FontSize', 14);
 xlabel('旋转误差', 'FontSize', 12);
 ylabel('概率密度', 'FontSize', 12);
-legend(strrep(algorithms, 'prop', '所提算法'), 'FontSize', 10, 'Location', 'best');
+legend(alg_labels, 'FontSize', 10, 'Location', 'best');
 grid on; box on;
 
 % 磁场误差分布 - KDE（只显示有数据的算法，自动排除init）
 subplot(2,3,3); hold on;
 valid_idx = find(~cellfun(@isempty, field_errors) & cellfun(@(x) numel(x)>0, field_errors));
 field_errors_valid = field_errors(valid_idx);
-algorithms_valid = algorithms(valid_idx);
+alg_labels_valid = alg_labels(valid_idx);
 for i = 1:numel(field_errors_valid)
     [f, x] = ksdensity(field_errors_valid{i});
     plot(x, f, '-', 'LineWidth', 2, 'Color', colors(valid_idx(i),:));
@@ -67,13 +80,13 @@ end
 title('磁场误差分布 (KDE)', 'FontSize', 14);
 xlabel('磁场误差', 'FontSize', 12);
 ylabel('概率密度', 'FontSize', 12);
-legend(strrep(algorithms_valid, 'prop', '所提算法'), 'FontSize', 10, 'Location', 'best');
+legend(alg_labels_valid, 'FontSize', 10, 'Location', 'best');
 grid on; box on;
 
 % 位置误差箱线图
 subplot(2,3,4);
 boxplot(cell2mat(cellfun(@(x) x(:), pos_errors, 'UniformOutput', false)), ...
-    'Labels', strrep(algorithms, 'prop', 'Proposed'));
+    'Labels', alg_labels);
 title('位置误差分布比较', 'FontSize', 14);
 ylabel('位置误差 (m)', 'FontSize', 12);
 grid on;
@@ -81,7 +94,7 @@ grid on;
 % 旋转误差箱线图
 subplot(2,3,5);
 boxplot(cell2mat(cellfun(@(x) x(:), rot_errors, 'UniformOutput', false)), ...
-    'Labels', strrep(algorithms, 'prop', 'Proposed'));
+    'Labels', alg_labels);
 title('旋转误差分布比较', 'FontSize', 14);
 ylabel('旋转误差', 'FontSize', 12);
 grid on;
@@ -89,7 +102,7 @@ grid on;
 % 磁场误差箱线图（只显示有数据的算法，自动排除init）
 subplot(2,3,6);
 boxplot(cell2mat(cellfun(@(x) x(:), field_errors_valid, 'UniformOutput', false)), ...
-    'Labels', strrep(algorithms_valid, 'prop', 'Proposed'));
+    'Labels', alg_labels_valid);
 title('磁场误差分布比较', 'FontSize', 14);
 ylabel('磁场误差', 'FontSize', 12);
 grid on;

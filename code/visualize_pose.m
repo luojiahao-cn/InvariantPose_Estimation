@@ -27,74 +27,62 @@ function visualize_pose(m_pos, m_hat, m_norm, p_true, R_true, results, d_list)
     h5 = quiver3(p_true(1), p_true(2), p_true(3), dir_vec_true(1), dir_vec_true(2), dir_vec_true(3), ...
         1, 'b', 'LineWidth', 2, 'MaxHeadSize', 2);
 
+    % 支持的算法及其显示属性
+    algs = {
+        'lm',    'p_lm',    'R_lm',    'm',           [0.9 0.7 0.9], 'LM估计';
+        'elm',   'p_elm',   'R_elm',   [0.2 0.6 1],   [0.2 0.6 1],   'ELM估计';
+        'ours',  'p_ours',  'R_ours',  [1 0.6 0.2],   [1 0.6 0.2],   'OURS估计';
+        'Rlm',   'p_Rlm',   'R_Rlm',   [0.2 0.8 0.2], [0.2 0.8 0.2], 'RLm估计';
+        % 新算法可在此添加
+    };
+
     % 过滤异常点（距离真实参考点超过阈值）
-    threshold = 0.5; % 距离阈值（单位：米）
+    threshold = 0.5;
     valid_idx = true(1, length(results));
     for k = 1:length(results)
-        dist_lm = inf;
-        dist_elm = inf;
-        dist_prop = inf;
-        if isfield(results(k), 'p_lm')
-            dist_lm = norm(results(k).p_lm - p_true);
+        dists = [];
+        for a = 1:size(algs,1)
+            p_field = algs{a,2};
+            if isfield(results(k), p_field)
+                dists(end+1) = norm(results(k).(p_field) - p_true);
+            end
         end
-        if isfield(results(k), 'p_elm')
-            dist_elm = norm(results(k).p_elm - p_true);
-        end
-        if isfield(results(k), 'p_prop')
-            dist_prop = norm(results(k).p_prop - p_true);
-        end
-
-        if max([dist_lm, dist_elm, dist_prop]) > threshold
+        if ~isempty(dists) && max(dists) > threshold
             valid_idx(k) = false;
         end
     end
     results = results(valid_idx);
 
     % 批量绘制所有实验结果
-    h_lm = [];
-    h_elm = [];
-    h_prop = [];
+    h_alg = cell(1, size(algs,1));
     for k = 1:length(results)
-        % LM
-        if isfield(results(k), 'p_lm')
-            h_lm(end+1) = scatter3(results(k).p_lm(1), results(k).p_lm(2), results(k).p_lm(3), 60, 'm', 'filled');
-            rect_lm = results(k).p_lm + results(k).R_lm * rect_local;
-            fill3(rect_lm(1,:), rect_lm(2,:), rect_lm(3,:), [0.9 0.7 0.9], 'FaceAlpha',0.3, 'EdgeColor','m', 'LineWidth',1);
-            dir_vec_lm = results(k).R_lm(:,1) * 0.01;
-            quiver3(results(k).p_lm(1), results(k).p_lm(2), results(k).p_lm(3), dir_vec_lm(1), dir_vec_lm(2), dir_vec_lm(3), ...
-                'LineWidth', 1, 'Color', 'm', 'MaxHeadSize', 1);
-        end
-        % ELM
-        if isfield(results(k), 'p_elm')
-            h_elm(end+1) = scatter3(results(k).p_elm(1), results(k).p_elm(2), results(k).p_elm(3), 60, [0.2 0.6 1], 'filled');
-            rect_elm = results(k).p_elm + results(k).R_elm * rect_local;
-            fill3(rect_elm(1,:), rect_elm(2,:), rect_elm(3,:), [0.2 0.6 1], 'FaceAlpha',0.3, 'EdgeColor',[0.2 0.6 1], 'LineWidth',1);
-            dir_vec_elm = results(k).R_elm(:,1) * 0.01;
-            quiver3(results(k).p_elm(1), results(k).p_elm(2), results(k).p_elm(3), dir_vec_elm(1), dir_vec_elm(2), dir_vec_elm(3), ...
-                'LineWidth', 1, 'Color', [0.2 0.6 1], 'MaxHeadSize', 1);
-        end
-        % OURS
-        if isfield(results(k), 'p_prop')
-            h_prop(end+1) = scatter3(results(k).p_prop(1), results(k).p_prop(2), results(k).p_prop(3), 60, [1 0.6 0.2], 'filled');
-            rect_prop = results(k).p_prop + results(k).R_prop * rect_local;
-            fill3(rect_prop(1,:), rect_prop(2,:), rect_prop(3,:), [1 0.6 0.2], 'FaceAlpha',0.3, 'EdgeColor',[1 0.6 0.2], 'LineWidth',1);
-            dir_vec_prop = results(k).R_prop(:,1) * 0.01;
-            quiver3(results(k).p_prop(1), results(k).p_prop(2), results(k).p_prop(3), dir_vec_prop(1), dir_vec_prop(2), dir_vec_prop(3), ...
-                'LineWidth', 1, 'Color', [1 0.6 0.2], 'MaxHeadSize', 1);
+        for a = 1:size(algs,1)
+            p_field = algs{a,2};
+            R_field = algs{a,3};
+            scatter_color = algs{a,4};
+            rect_color = algs{a,5};
+            if isfield(results(k), p_field) && isfield(results(k), R_field)
+                p_val = results(k).(p_field);
+                h_alg{a}(end+1) = scatter3(p_val(1), p_val(2), p_val(3), 60, scatter_color, 'filled');
+                rect = p_val + results(k).(R_field) * rect_local;
+                fill3(rect(1,:), rect(2,:), rect(3,:), rect_color, 'FaceAlpha',0.3, 'EdgeColor',rect_color, 'LineWidth',1);
+                dir_vec = results(k).(R_field)(:,1) * 0.01;
+                quiver3(p_val(1), p_val(2), p_val(3), dir_vec(1), dir_vec(2), dir_vec(3), ...
+                    'LineWidth', 1, 'Color', scatter_color, 'MaxHeadSize', 1);
+            end
         end
     end
 
-    % 分别设置图例，确保颜色和内容对应
-    legend([h1, h2(1), h3, h4, h5, h_lm(1), h_elm(1), h_prop(1)], {
-        '磁铁位置',... 
-        '磁化方向',... 
-        '真实参考点',... 
-        '真实阵列',... 
-        '真实方向',... 
-        'LM估计',...
-        'ELM估计',... 
-        'OURS估计'
-    }, 'Location', 'bestoutside');
+    % 图例句柄和标签
+    legend_handles = [h1, h2(1), h3, h4, h5];
+    legend_labels = {'磁铁位置', '磁化方向', '真实参考点', '真实阵列', '真实方向'};
+    for a = 1:size(algs,1)
+        if ~isempty(h_alg{a})
+            legend_handles(end+1) = h_alg{a}(1);
+            legend_labels{end+1} = algs{a,6};
+        end
+    end
+    legend(legend_handles, legend_labels, 'Location', 'bestoutside');
 
     % 设置视角以真实传感器阵列参考点为中心
     camtarget(p_true'); % 视线焦点
