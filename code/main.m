@@ -9,7 +9,7 @@ m_hat = [ 0 , 0.7;
           1 , 0.7];  % 磁化方向（未归一化）
 
 m_hat = m_hat ./ vecnorm(m_hat); % 归一化磁化方向
-m_norm = [1e3 , 8e2];            % 磁矩幅值 [A·m²]
+m_norm = [8e2 , 8e2];            % 磁矩幅值 [A·m²]
 
 d_list_e = [
     [0; 0; 0],...
@@ -17,7 +17,7 @@ d_list_e = [
     [2e-3; 0; 0],...
     [0; 1e-3; 0],...
     [0; 0; 1e-3],...
-    [1e-3; 0; 1e-3]
+    % [1e-3; 0; 1e-3]
 ];
 
 row_means = mean(d_list_e, 2);
@@ -76,7 +76,7 @@ for sensor_idx = 1:num_sensors
 end
 
 %% 多次实验设置
-num_experiments = 10; % 实验次数
+num_experiments = 500; % 实验次数
 results = struct();
 
 options = optimoptions('lsqnonlin', ...
@@ -85,7 +85,7 @@ options = optimoptions('lsqnonlin', ...
 
 % 工作空间约束参数
 workspace_center = [0; 0; 0];
-workspace_radius = 1.0;
+workspace_radius = 0.5;
 
 % 增加位置约束
 lb_p = workspace_center - workspace_radius; % 下界
@@ -99,30 +99,36 @@ for exp_idx = 1:num_experiments
     % init_error = zeros(3,1);
     
     % 初始位置和旋转（添加扰动）
-    p_init = p_true + 0.01 * init_error; 
+    % p_init = zeros(3,1) + 0.01 * init_error; 
+    p_init = p_true + 0.05 * init_error;
     % theta_init = theta_true + 1 * init_error;
-    theta_init = theta_true + pi * init_error;
+    theta_init = theta_true + 0.1 * init_error;
     R_init = MatrixExp3(VecToso3(theta_init));
 
     % 调用LM算法
     [p_lm, R_lm, stats_lm] = estimate_pose_lm(...
         b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p);
-    % visualize_pose(m_pos, m_hat, m_norm, p_true, R_true, p_lm, R_lm, d_list);
+    results(exp_idx).p_lm = p_lm;
+    results(exp_idx).R_lm = R_lm;
 
     % 调用ELM算法
     [p_elm, R_elm, stats_elm] = estimate_pose_elm(...
         b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p);
-    % visualize_pose(m_pos, m_hat, m_norm, p_true, R_true, p_elm, R_elm, d_list);
+    results(exp_idx).p_elm = p_elm;
+    results(exp_idx).R_elm = R_elm;
 
+    % 调用union算法
     % [p_union, R_union, stats_union] = estimate_pose_union(...
     %     b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p);
-    % visualize_pose(m_pos, m_hat, m_norm, p_true, R_true, p_union, R_union, d_list);
+    % results(exp_idx).p_union = p_union;
+    % results(exp_idx).R_union = R_union;
 
     % 调用所提算法
     [p_prop, R_prop, stats_prop] = estimate_pose_ours(...
         b_total, d_list, m_pos, m_hat, m_norm, p_init, R_true, p_true, options, lb_p, ub_p);
-    visualize_pose(m_pos, m_hat, m_norm, p_true, R_true, p_prop, R_prop, d_list);
-    
+    results(exp_idx).p_prop = p_prop;
+    results(exp_idx).R_prop = R_prop;
+
     % 计算初始误差
     init_pos_error = norm(p_init - p_true);
     init_rot_error = norm(R_init - R_true,'fro');
@@ -166,6 +172,9 @@ for exp_idx = 1:num_experiments
     results(exp_idx).prop_field_error = prop_field_error;
 
 end
+
+% 统一可视化所有实验结果
+visualize_pose(m_pos, m_hat, m_norm, p_true, R_true, results, d_list);
 
 display_statistical_summary(results, num_experiments);
 plot_error_distributions(results);
