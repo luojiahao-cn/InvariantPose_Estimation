@@ -57,9 +57,7 @@ fun22 = @(p) obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt
 p_est = lsqnonlin(fun22, p_init, lb, ub, options);
 %% 步骤4: 方向估计（公式24-25）
 [b_p, A_p] = calcFieldAndGradient(p_est, m_pos, m_hat, m_norm);
-b_bar = b_total * Q_bar;
 B_bar = b_p * ones(1, num_sensors) * Q_bar;
-% mu = 1;
 R_est = estimateR_iter(b_bar, B_bar, A_p, X_opt);
 %% 保存中间结果
 stats.X_opt = X_opt;         % 估计的梯度矩阵
