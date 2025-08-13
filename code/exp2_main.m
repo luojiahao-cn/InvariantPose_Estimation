@@ -90,9 +90,18 @@ end
 %% 实验设置
 num_experiments = 50;
 results = struct();
+% 优化器参数
+% options = optimoptions('lsqnonlin', ...
+%     'Algorithm', 'levenberg-marquardt', ...
+%     'Display', 'off');
+
 options = optimoptions('lsqnonlin', ...
-    'Algorithm', 'levenberg-marquardt', ...
-    'Display', 'off');
+    'Algorithm', 'trust-region-reflective', ...
+    'Display', 'off', ...
+    'TolFun', 1e-6, ...
+    'TolX', 1e-6, ...
+    'MaxIter', 1000, ...
+    'MaxFunctionEvaluations', 10000);
 
 % 工作空间约束参数
 workspace_center = [0; 0; 0];
@@ -108,7 +117,7 @@ for exp_idx = 1:num_experiments
     % ==== 生成初始扰动 ====
     init_error = -1 + 2 * rand(3,1);
     p_init = p_true + 0.0 * init_error;
-    theta_init = theta_true + pi/2 * init_error;
+    theta_init = theta_true + pi * init_error;
     R_init = MatrixExp3(VecToso3(theta_init));
 
     % ==== 算法调用 ====
