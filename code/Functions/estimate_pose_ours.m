@@ -59,8 +59,17 @@ p_est = lsqnonlin(fun22, p_init, lb, ub, options);
 [b_p, A_p] = calcFieldAndGradient(p_est, m_pos, m_hat, m_norm);
 B_bar = b_p * ones(1, num_sensors) * Q_bar;
 R_est = estimateR_iter(b_bar, B_bar, A_p, X_opt);
-R_true
 %% 保存中间结果
+% R_init = estiamteR(b_bar, B_bar, A_p, X_opt);
+
+% mu = norm(A_p)*norm(X_opt)/(norm(B_bar)*norm(b_bar));
+% F = @(R) norm(R'*A_p*R*X_opt - X_opt, 'fro') + ...
+%           mu * norm(R'*B_bar - b_bar, 'fro');
+
+% F(R_init)
+% F(R_true)
+% F(R_est)
+
 stats.X_opt = X_opt;         % 估计的梯度矩阵
 end
 
@@ -85,46 +94,73 @@ function res = obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X)
     res = [term1; term2; term3];
 end
 %% Estimate R
-function R = estimateR_iter(b_bar, B_bar, A_p, X)
+function R = estimateR_iter(b_bar, B_bar, A_p, X_opt)
     %% Iterative method:
     LA = min(eig(A_p));
-    LX = min(eig(X));
+    LX = min(eig(X_opt));
     At = A_p - LA * eye(3);
-    Xt = X - LX * eye(3);
-    L = 4*norm(At)*norm(Xt);
-    mu = 0; %1/L; % regularization parameter
-    beta = 0; % regularization parameter for R
+    Xt = X_opt - LX * eye(3);
+    L = norm(A_p)*norm(X_opt)/(norm(B_bar)*norm(b_bar));
+    mu = L; %L; % regularization parameter
+    beta = 1e-6; % regularization parameter for R
     M = @(R) mu * B_bar * b_bar' + 2 * At * R * Xt + beta * R;
-    f = @(R) trace(R' * A_p * R * X + mu * R' * B_bar * b_bar' + beta * R);
-    fbar = @(R) trace(R' * At * R * Xt + mu * R' * B_bar * b_bar' + beta * R);
-    skw = @(R) 0.5 * (R - R');
+    f = @(R) trace(R' * A_p * R * X_opt + mu * R' * B_bar * b_bar' + beta * R);
+    % fbar = @(R) trace(R' * At * R * Xt + mu * R' * B_bar * b_bar' + beta * R);
+    % skw = @(R) 0.5 * (R - R');
     %% Initial condition
-    R = estiamteR(b_bar, B_bar, A_p, X);
-    f(R) 
-    fbar(R) + LA * trace(X) + LX * trace(A_p) - 3 * LA * LX
+    % R = estiamteR(b_bar, B_bar, At, Xt);
+    R = eye(3);
+    % f(R) 
+    % fbar(R) + LA * trace(X) + LX * trace(A_p) - 3 * LA * LX
+    % skw(R'*(A_p*R*X))
 
-    skw(R'*(A_p*R*X))
-    delta = 1e6; k = 0; kmax = 20;
-    while k < kmax && delta > 1e-6
-        [U, Sigma, V] = svd(M(R));
+    delta = 1e6; k = 0; kmax = 50;
+    while k < kmax && delta > 1e-8
+        [U, ~, V] = svd(M(R));
         R_opt = U*diag([1,1,det(U*V')])*V';
-        delta = norm(R_opt - R, 'fro');
+        delta = f(R_opt) - f(R);
+        % delta = norm(R_opt - R, 'fro');
         R = R_opt;
         k = k + 1;
+    end
+    if k == kmax
+        warning('迭代未收敛，可能需要调整参数');
     end
 end
 
 function [R_opt1, R_opt2] = estiamteR(b_bar, B_bar, A_p, X)
     % estimate R using R^T A R = X
     [PA, LA] = eig(A_p);
-    [PX, LX] = eigs(X);
-    [~, IndA] = sort(diag(LA), 'ascend');
+    [PX, LX] = eig(X);
+    [lam, IndA] = sort(diag(LA), 'ascend');
     PA = PA(:,IndA);
-    [~, IndX] = sort(diag(LX), 'ascend');
+    [sig, IndX] = sort(diag(LX), 'ascend');
     PX = PX(:,IndX);
-    Y = PA*diag(sign(diag(PX'*PA)))*PX';
-    [U, ~, V] = svd(Y);
-    R_opt1 = U*diag([1,1,det(U*V')])*V';
+
+    % ---- 规范为 SO(3) 的特征向量基 ----
+    if det(PA) < 0, PA(:,1) = -PA(:,1); end
+    if det(PX) < 0, PX(:,1) = -PX(:,1); end
+
+    % ---- 枚举 6 个置换，做最佳匹配 ----
+    perms3 = perms(1:3);
+    bestCost = inf; bestP = eye(3);
+    for k = 1:size(perms3,1)
+        p = perms3(k,:);
+        P = eye(3); P = P(:, p);                 % 置换矩阵
+        cost = sum((lam(p) - sig).^2);           % 等价于最大化 sum(sig .* lam(p))
+        if cost < bestCost
+            bestCost = cost; bestP = P;
+        end
+    end
+
+    % ---- 保证 Y ∈ SO(3) ----
+    Y = bestP;
+    if det(Y) < 0
+        Y = Y * diag([1 1 -1]);                  % 用符号阵把行列式调成 +1
+    end
+
+    % ---- 回代得到最优解 R ----
+    R_opt1 = PA * Y * PX';
     % S = diag(sign(diag(PX'*PA)));
     % if det(S)*det(PA)*det(PX) < 0
     %     d = diag(PX'*PA);

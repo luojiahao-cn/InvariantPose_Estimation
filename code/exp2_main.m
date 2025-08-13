@@ -116,7 +116,7 @@ for exp_idx = 1:num_experiments
 
     % ==== 生成初始扰动 ====
     init_error = -1 + 2 * rand(3,1);
-    p_init = p_true + 0 * init_error;
+    p_init = p_true + 1e-3 * init_error;
     theta_init = theta_true + 2 * pi * init_error;
 
     % ==== 算法调用 ====
