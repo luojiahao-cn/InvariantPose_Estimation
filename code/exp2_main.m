@@ -116,9 +116,8 @@ for exp_idx = 1:num_experiments
 
     % ==== 生成初始扰动 ====
     init_error = -1 + 2 * rand(3,1);
-    p_init = p_true + 0.0 * init_error;
-    theta_init = theta_true + pi * init_error;
-    R_init = MatrixExp3(VecToso3(theta_init));
+    p_init = p_true + 0 * init_error;
+    theta_init = theta_true + 2 * pi * init_error;
 
     % ==== 算法调用 ====
     % LM
@@ -145,9 +144,6 @@ for exp_idx = 1:num_experiments
     results(exp_idx).R_ours  = R_ours;
 
     % ==== 误差分析 ====
-    % 初始误差
-    % results(exp_idx).init_pos_error = norm(p_init - p_true);
-    % results(exp_idx).init_rot_error = norm(R_init - R_true, 'fro');
 
     % LM
     results(exp_idx).lm_pos_error = norm(p_lm - p_true);
