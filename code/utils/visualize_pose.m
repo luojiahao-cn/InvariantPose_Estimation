@@ -31,9 +31,9 @@ function visualize_pose(m_pos, m_hat, m_norm, p_true, R_true, results, d_list)
     algs = {
         'lm',    'p_lm',    'R_lm',    'm',           [0.9 0.7 0.9], 'LM估计';
         'elm',   'p_elm',   'R_elm',   [0.2 0.6 1],   [0.2 0.6 1],   'ELM估计';
-        'ours',  'p_ours',  'R_ours',  [1 0.6 0.2],   [1 0.6 0.2],   'OURS估计';
         'Rlm',   'p_Rlm',   'R_Rlm',   [0.2 0.8 0.2], [0.2 0.8 0.2], 'RLm估计';
         % 新算法可在此添加
+        'ours',  'p_ours',  'R_ours',  [1 0.6 0.2],   [1 0.6 0.2],   'OURS估计';
     };
 
     % 过滤异常点（距离真实参考点超过阈值）

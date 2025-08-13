@@ -29,8 +29,8 @@ for i = 1:numel(fields)
 end
 
 % 算法显示名映射表
-alg_map = containers.Map({'init','lm','elm','ours','Rlm'}, ...
-                         {'初始','LM','ELM','所提','RLm'});
+alg_map = containers.Map({'init','lm','elm','Rlm','ours'}, ...
+    {'初始','LM','ELM','Rlm','Ours'});
 alg_labels = cell(size(algorithms));
 for i = 1:numel(algorithms)
     x = algorithms{i};

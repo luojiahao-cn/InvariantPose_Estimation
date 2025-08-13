@@ -1,4 +1,6 @@
 clc; clear; close all;
+addpath('utils')
+addpath('algorithms')
 
 %% 磁铁参数定义
 m_pos = [ 0 , 0.05;
@@ -126,8 +128,8 @@ for exp_idx = 1:num_experiments
 
     % ==== 误差分析 ====
     % 初始误差
-    results(exp_idx).init_pos_error = norm(p_init - p_true);
-    results(exp_idx).init_rot_error = norm(R_init - R_true, 'fro');
+    % results(exp_idx).init_pos_error = norm(p_init - p_true);
+    % results(exp_idx).init_rot_error = norm(R_init - R_true, 'fro');
 
     % LM
     % results(exp_idx).lm_pos_error = norm(p_lm - p_true);

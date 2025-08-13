@@ -64,6 +64,7 @@ C = b_p * ones(1, num_sensors) * Q_bar;
 % norm(R_est-R_est2,'fro')
 s = svd(C*B');
 mu = 0.5*s(1,1)/(norm(X_opt)*norm(A_p));
+% mu = 1;
 R_est3 = estimateR_iter(p_est, m_pos, m_hat, m_norm, num_sensors, b_total, Q_bar, X_opt, mu);
 R_est4 = softProcrustesGrad(R_est,B,C,A_p,X_opt,mu);
 % R_est5 = softProcrustesLM(R_est,B,C,A_p,X_opt,norm(B*C','fro')/norm(A_p*X_opt,'fro'));
