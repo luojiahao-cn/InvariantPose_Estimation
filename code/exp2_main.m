@@ -30,7 +30,7 @@ d_list_e = [
 row_means = mean(d_list_e, 2);
 d_list = d_list_e - row_means;
 
-% 
+% 真实姿态
 theta_true = pi*rand(3,1); % 真实旋转向量 [rad]
 p_true = -1e-2 + 2e-2 * rand(3,1); %[0; 0; -0.05]; % 传感器阵列参考点真实位置 [m]
 R_true = MatrixExp3(VecToso3(theta_true));
@@ -81,12 +81,12 @@ end
 
 %% 增加地磁干扰和噪声
 % % 添加高斯噪声
-% B_total = B_total + randn(size(B_total)) * 1e-6;
-% b_total = b_total + randn(size(b_total)) * 1e-6;
+B_total = B_total + randn(size(B_total)) * 1e-6;
+b_total = b_total + randn(size(b_total)) * 1e-6;
 
 % % 增加地磁干扰
-% B_total = B_total + [0; 0; 1e-6];
-% b_total = b_total + [0; 0; 1e-6];
+B_total = B_total + [0; 0; 1e-6];
+b_total = b_total + [0; 0; 1e-6];
 
 %% 实验设置
 num_experiments = 50;
@@ -101,9 +101,9 @@ options = optimoptions('lsqnonlin', ...
     'MaxIter', 1000, ...
     'MaxFunctionEvaluations', 10000);
 
-options2 = optimoptions('lsqnonlin', ...
-    'Algorithm', 'levenberg-marquardt', ...
-    'Display', 'off');
+% options2 = optimoptions('lsqnonlin', ...
+%     'Algorithm', 'levenberg-marquardt', ...
+%     'Display', 'off');
 
 % 工作空间约束参数
 workspace_center = [0; 0; 0];
@@ -119,44 +119,59 @@ for exp_idx = 1:num_experiments
     % ==== 生成初始扰动 ====
     init_error = -1 + 2 * rand(3,1);
     p_init = p_true + 1e-3 * init_error;
-    % p_init = 1e-3 * init_error;
     theta_init = theta_true + pi/2 * init_error;
     R_init = MatrixExp3(VecToso3(theta_init));
+
     % ==== 算法调用 ====
     % LM
-    [p_lm, R_lm, stats_lm] = estimate_pose_lm( ...
-        b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p );
+    % t_lm_start = tic;
+    % [p_lm, R_lm, stats_lm] = estimate_pose_lm( ...
+    %     b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p );
+    % t_lm = toc(t_lm_start);
+
     % ELM
-    [p_elm, R_elm, stats_elm] = estimate_pose_elm( ...
-        b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p );
+    % t_elm_start = tic;
+    % [p_elm, R_elm, stats_elm] = estimate_pose_elm( ...
+    %     b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p );
+    % t_elm = toc(t_elm_start);
+
     % 所提算法
+    t_ours_start = tic;
     [p_ours, R_ours, stats_ours] = estimate_pose_ours( ...
         b_total, d_list, m_pos, m_hat, m_norm, p_init, R_init, R_true, p_true, options, lb_p, ub_p );
+    t_ours = toc(t_ours_start);
+
     % Rlm
+    t_Rlm_start = tic;
     [p_Rlm, R_Rlm, stats_Rlm] = estimate_R_lm( ...
-        b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_ours, options2 );
+        b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_ours, options );
+    t_Rlm = toc(t_Rlm_start);
 
     % ==== 结果存储 ====
-    results(exp_idx).p_lm    = p_lm;
-    results(exp_idx).R_lm    = R_lm;
-    results(exp_idx).p_elm   = p_elm;
-    results(exp_idx).R_elm   = R_elm;
+    % results(exp_idx).p_lm    = p_lm;
+    % results(exp_idx).R_lm    = R_lm;
+    % results(exp_idx).t_lm    = t_lm;
+    % results(exp_idx).p_elm   = p_elm;
+    % results(exp_idx).R_elm   = R_elm;
+    % results(exp_idx).t_elm   = t_elm;
     results(exp_idx).p_Rlm   = p_Rlm;
     results(exp_idx).R_Rlm   = R_Rlm;
+    results(exp_idx).t_Rlm   = t_Rlm;
     results(exp_idx).p_ours  = p_ours;
     results(exp_idx).R_ours  = R_ours;
+    results(exp_idx).t_ours  = t_ours;
 
     % ==== 误差分析 ====
 
     % LM
-    results(exp_idx).lm_pos_error = norm(p_lm - p_true);
-    results(exp_idx).lm_rot_error = norm(R_lm - R_true, 'fro');
-    results(exp_idx).lm_field_error = calculate_field_errors(p_lm, R_lm, b_total, d_list, m_pos, m_hat, m_norm);
+    % results(exp_idx).lm_pos_error = norm(p_lm - p_true);
+    % results(exp_idx).lm_rot_error = norm(R_lm - R_true, 'fro');
+    % results(exp_idx).lm_field_error = calculate_field_errors(p_lm, R_lm, b_total, d_list, m_pos, m_hat, m_norm);
 
     % ELM
-    results(exp_idx).elm_pos_error = norm(p_elm - p_true);
-    results(exp_idx).elm_rot_error = norm(R_elm - R_true, 'fro');
-    results(exp_idx).elm_field_error = calculate_field_errors(p_elm, R_elm, b_total, d_list, m_pos, m_hat, m_norm);
+    % results(exp_idx).elm_pos_error = norm(p_elm - p_true);
+    % results(exp_idx).elm_rot_error = norm(R_elm - R_true, 'fro');
+    % results(exp_idx).elm_field_error = calculate_field_errors(p_elm, R_elm, b_total, d_list, m_pos, m_hat, m_norm);
 
     % Rlm
     results(exp_idx).Rlm_pos_error = norm(p_Rlm - p_true);

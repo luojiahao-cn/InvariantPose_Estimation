@@ -1,6 +1,6 @@
 clc; clear; close all;
 addpath('utils')
-addpath('algorithms')
+addpath('Functions')
 
 %% 磁铁参数定义
 m_pos = [ 0 , 0.05;
