@@ -1,4 +1,4 @@
-function [p_est, R_est, stats] = estimate_pose_ours(b_total, d_list, m_pos, m_hat, m_norm, p_init, R_true, p_true, options, lb_p, ub_p)
+function [p_est, R_est, stats] = estimate_pose_ours(b_total, d_list, m_pos, m_hat, m_norm, p_init, R_init, R_true, p_true, options, lb_p, ub_p)
 % PROPOSED_METHOD_POSE_ESTIMATION 使用所提方法估计传感器姿态（位置和方向）
 %
 % 输入参数：
@@ -58,17 +58,25 @@ p_est = lsqnonlin(fun22, p_init, lb, ub, options);
 %% Stage #2: Estimate for rotation \hat{R}
 [b_p, A_p] = calcFieldAndGradient(p_est, m_pos, m_hat, m_norm);
 B_bar = b_p * ones(1, num_sensors) * Q_bar;
-R_est = estimateR_iter(b_bar, B_bar, A_p, X_opt);
+[~, R_init_est] = estiamteR(b_bar, B_bar, A_p, X_opt);
+R_est = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init_est);
 %% 保存中间结果
-% R_init = estiamteR(b_bar, B_bar, A_p, X_opt);
 
-% mu = norm(A_p)*norm(X_opt)/(norm(B_bar)*norm(b_bar));
-% F = @(R) norm(R'*A_p*R*X_opt - X_opt, 'fro') + ...
-%           mu * norm(R'*B_bar - b_bar, 'fro');
+% mu = 0.5;
+% F = @(mu, R) (1-mu) * norm(R'*A_p*R - X_opt, 'fro')^2 + ...
+%           mu * norm(R'*B_bar - b_bar, 'fro')^2;
 
-% F(R_init)
-% F(R_true)
-% F(R_est)
+% F(1, R_init)
+% F(1, R_true)
+% F(1, R_est)
+
+% F(0.5, R_init)
+% F(0.5, R_true)
+% F(0.5, R_est)
+
+% F(0, R_init)
+% F(0, R_true)
+% F(0, R_est)
 
 stats.X_opt = X_opt;         % 估计的梯度矩阵
 end
@@ -94,32 +102,31 @@ function res = obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X)
     res = [term1; term2; term3];
 end
 %% Estimate R
-function R = estimateR_iter(b_bar, B_bar, A_p, X_opt)
+function R = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init)
     %% Iterative method:
-    LA = min(eig(A_p));
-    LX = min(eig(X_opt));
+    LA = min(eig(A_p)) - 1e-3;
+    LX = min(eig(X_opt)) - 1e-3;
     At = A_p - LA * eye(3);
     Xt = X_opt - LX * eye(3);
     L = norm(A_p)*norm(X_opt)/(norm(B_bar)*norm(b_bar));
-    mu = L; %L; % regularization parameter
-    beta = 1e-6; % regularization parameter for R
+    % L = 1000;
+    % L = norm(A_p)*norm(X_opt);
+    % mu = L; %L; % regularization parameter
+    mu = 1e6;
+    beta = 1e-3; % regularization parameter for R
     M = @(R) mu * B_bar * b_bar' + 2 * At * R * Xt + beta * R;
-    f = @(R) trace(R' * A_p * R * X_opt + mu * R' * B_bar * b_bar' + beta * R);
+    % f = @(R) trace(R' * A_p * R * X_opt + mu * R' * B_bar * b_bar' + beta * R);
     % fbar = @(R) trace(R' * At * R * Xt + mu * R' * B_bar * b_bar' + beta * R);
     % skw = @(R) 0.5 * (R - R');
+    % g = @(R) 2 * skw(R' * (2 * A_p * R * X_opt + mu * B_bar * b_bar' + beta * eye(3)));
+    % gbar = @(R) 2 * skw(R' * (2 * At * R * Xt + mu * B_bar * b_bar' + beta * eye(3)));
     %% Initial condition
-    % R = estiamteR(b_bar, B_bar, At, Xt);
-    R = eye(3);
-    % f(R) 
-    % fbar(R) + LA * trace(X) + LX * trace(A_p) - 3 * LA * LX
-    % skw(R'*(A_p*R*X))
-
-    delta = 1e6; k = 0; kmax = 50;
-    while k < kmax && delta > 1e-8
+    delta = 1e6; k = 0; kmax = 1000;
+    R = R_init;
+    while k < kmax && delta > 1e-5
         [U, ~, V] = svd(M(R));
         R_opt = U*diag([1,1,det(U*V')])*V';
-        delta = f(R_opt) - f(R);
-        % delta = norm(R_opt - R, 'fro');
+        delta = norm(R_opt - R, 'fro');
         R = R_opt;
         k = k + 1;
     end
@@ -161,13 +168,8 @@ function [R_opt1, R_opt2] = estiamteR(b_bar, B_bar, A_p, X)
 
     % ---- 回代得到最优解 R ----
     R_opt1 = PA * Y * PX';
-    % S = diag(sign(diag(PX'*PA)));
-    % if det(S)*det(PA)*det(PX) < 0
-    %     d = diag(PX'*PA);
-    %     [~, ind] = min(abs(d));
-    %     S(ind, ind) = -S(ind, ind); % 确保行列式为正
-    % end
-    % R_opt1 = PA*S*PX';
+    % R_opt1 = PA * diag(sign(diag(PX'*PA)))*PX';
+
     % estimate R using SVD
     M = B_bar * b_bar';
     [U, ~, V] = svd(M);

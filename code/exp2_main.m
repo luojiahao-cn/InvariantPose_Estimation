@@ -12,7 +12,7 @@ m_pos = [
     ]; % 磁铁位置 [m]
 m_hat = [
     [1; 0; 0],...
-    [-1; 0; 0]
+    [0; 0; 1]
     ];  % 磁化方向（未归一化）
 
 m_hat = m_hat ./ vecnorm(m_hat); % 归一化磁化方向
@@ -30,8 +30,9 @@ d_list_e = [
 row_means = mean(d_list_e, 2);
 d_list = d_list_e - row_means;
 
-theta_true = [0; -pi/2; 0]; % 真实旋转向量 [rad]
-p_true = [0; 0; -0.05]; % 传感器阵列参考点真实位置 [m]
+% 
+theta_true = pi*rand(3,1); % 真实旋转向量 [rad]
+p_true = -1e-2 + 2e-2 * rand(3,1); %[0; 0; -0.05]; % 传感器阵列参考点真实位置 [m]
 R_true = MatrixExp3(VecToso3(theta_true));
 
 % 计算传感器全局位置
@@ -91,9 +92,6 @@ end
 num_experiments = 50;
 results = struct();
 % 优化器参数
-% options = optimoptions('lsqnonlin', ...
-%     'Algorithm', 'levenberg-marquardt', ...
-%     'Display', 'off');
 
 options = optimoptions('lsqnonlin', ...
     'Algorithm', 'trust-region-reflective', ...
@@ -102,6 +100,10 @@ options = optimoptions('lsqnonlin', ...
     'TolX', 1e-6, ...
     'MaxIter', 1000, ...
     'MaxFunctionEvaluations', 10000);
+
+options2 = optimoptions('lsqnonlin', ...
+    'Algorithm', 'levenberg-marquardt', ...
+    'Display', 'off');
 
 % 工作空间约束参数
 workspace_center = [0; 0; 0];
@@ -117,8 +119,9 @@ for exp_idx = 1:num_experiments
     % ==== 生成初始扰动 ====
     init_error = -1 + 2 * rand(3,1);
     p_init = p_true + 1e-3 * init_error;
-    theta_init = theta_true + 2 * pi * init_error;
-
+    % p_init = 1e-3 * init_error;
+    theta_init = theta_true + pi/2 * init_error;
+    R_init = MatrixExp3(VecToso3(theta_init));
     % ==== 算法调用 ====
     % LM
     [p_lm, R_lm, stats_lm] = estimate_pose_lm( ...
@@ -128,10 +131,10 @@ for exp_idx = 1:num_experiments
         b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p );
     % 所提算法
     [p_ours, R_ours, stats_ours] = estimate_pose_ours( ...
-        b_total, d_list, m_pos, m_hat, m_norm, p_init, R_true, p_true, options, lb_p, ub_p );
+        b_total, d_list, m_pos, m_hat, m_norm, p_init, R_init, R_true, p_true, options, lb_p, ub_p );
     % Rlm
     [p_Rlm, R_Rlm, stats_Rlm] = estimate_R_lm( ...
-        b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_ours, options );
+        b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_ours, options2 );
 
     % ==== 结果存储 ====
     results(exp_idx).p_lm    = p_lm;
