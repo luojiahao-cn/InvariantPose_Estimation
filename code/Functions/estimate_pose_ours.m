@@ -54,6 +54,8 @@ b_bar = b_total * Q_bar; % 计算bBar
 lb = lb_p(:);
 ub = ub_p(:);
 fun22 = @(p) obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt);
+Jp = numJacobian(fun22, p_true)
+rank(Jp)
 p_est = lsqnonlin(fun22, p_init, lb, ub, options);
 %% Stage #2: Estimate for rotation \hat{R}
 [b_p, A_p] = calcFieldAndGradient(p_est, m_pos, m_hat, m_norm);
@@ -174,4 +176,18 @@ function [R_opt1, R_opt2] = estiamteR(b_bar, B_bar, A_p, X)
     M = B_bar * b_bar';
     [U, ~, V] = svd(M);
     R_opt2 = V*diag([1,1,det(V*U')])*U';
+end
+
+function J = numJacobian(fun, x)
+    f0 = fun(x);
+    n  = numel(x);
+    m  = numel(f0);
+    J  = zeros(m, n);
+    h  = 1e-6;  % 步长，可调
+
+    for i = 1:n
+        xh      = x;
+        xh(i)   = xh(i) + h;
+        J(:, i) = (fun(xh) - f0) / h;  % 前向差分
+    end
 end
