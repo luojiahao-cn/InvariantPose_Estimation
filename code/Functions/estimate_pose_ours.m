@@ -56,6 +56,8 @@ ub = ub_p(:);
 fun22 = @(p) obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt);
 Jp = numJacobian(fun22, p_true)
 rank(Jp)
+svd(Jp)
+c = cond(Jp)
 p_est = lsqnonlin(fun22, p_init, lb, ub, options);
 %% Stage #2: Estimate for rotation \hat{R}
 [b_p, A_p] = calcFieldAndGradient(p_est, m_pos, m_hat, m_norm);
