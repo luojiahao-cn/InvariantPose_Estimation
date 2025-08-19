@@ -11,8 +11,8 @@ addpath('Functions')
 rng(2025);
 
 %% 参数设置
-num_points = 50; % 每个偏离度采样数量
-offset_list = linspace(0, 0.05, 21); % 初值偏离度（米）
+num_points = 100; % 每个偏离度采样数量
+offset_list = linspace(0, 0.1, 21); % 初值偏离度（米）
 labels = {'无干扰噪声','仅干扰','仅噪声','干扰和噪声'};
 alg_labels = {'LM','ELM','Rlm','Ours'};
 alg_colors = lines(numel(alg_labels));
@@ -55,8 +55,8 @@ workspace_radius = 0.5;
 lb_p = workspace_center - workspace_radius;
 ub_p = workspace_center + workspace_radius;
 
-noise_level = 1e-6;
-disturbance = [0; 0; 1e-6];
+noise_level = 3e-5;
+disturbance = [0; 0; 1e-4];
 
 num_alg = numel(alg_labels);
 num_cond = numel(labels);
@@ -67,10 +67,26 @@ err_pos = zeros(num_offset, num_cond, num_alg, num_points);
 err_rot = zeros(num_offset, num_cond, num_alg, num_points);
 
 tic; % 总计时
+hwb = waitbar(0, '正在运行实验，请稍候...');
 for off_idx = 1:num_offset
     offset = offset_list(off_idx);
     t_offset_start = tic;
     for pt_idx = 1:num_points
+        % waitbar进度更新，增加已用时和剩余时间
+        total_sample = (off_idx-1)*num_points + pt_idx;
+        total_samples = num_offset * num_points;
+        percent_sample = total_sample / total_samples;
+        elapsed = toc;
+        if total_sample > 1
+            avg_time = elapsed / total_sample;
+            est_left = (total_samples - total_sample) * avg_time;
+        else
+            est_left = 0;
+        end
+        waitbar(percent_sample, hwb, ...
+            sprintf('进度 %.2f%% (%d/%d)\n已用时 %.1fs，预计剩余 %.1fs', ...
+                percent_sample*100, total_sample, total_samples, elapsed, est_left));
+
         % 随机生成真值
         theta_true = -pi + 2*pi*rand(3,1);
         p_true = -1e-1 + 2e-1*rand(3,1);
@@ -125,24 +141,28 @@ for off_idx = 1:num_offset
             err_pos(off_idx, mode, 2, pt_idx) = norm(p_elm - p_true);
             err_rot(off_idx, mode, 2, pt_idx) = norm(R_elm - R_true, 'fro');
 
-            % Rlm
-            [p_Rlm, R_Rlm, ~] = estimate_R_lm( ...
-                b_meas, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options );
-            err_pos(off_idx, mode, 3, pt_idx) = norm(p_Rlm - p_true);
-            err_rot(off_idx, mode, 3, pt_idx) = norm(R_Rlm - R_true, 'fro');
-
             % Ours
             [p_ours, R_ours, ~] = estimate_pose_ours( ...
                 b_meas, d_list, m_pos, m_hat, m_norm, p_init, R_init, R_true, p_true, options, lb_p, ub_p );
             err_pos(off_idx, mode, 4, pt_idx) = norm(p_ours - p_true);
             err_rot(off_idx, mode, 4, pt_idx) = norm(R_ours - R_true, 'fro');
+            
+            % Rlm
+            [p_Rlm, R_Rlm, ~] = estimate_R_lm( ...
+                b_meas, d_list, m_pos, m_hat, m_norm, theta_init, p_ours, options );
+            err_pos(off_idx, mode, 3, pt_idx) = norm(p_Rlm - p_true);
+            err_rot(off_idx, mode, 3, pt_idx) = norm(R_Rlm - R_true, 'fro');
+
         end
     end
-    elapsed = toc(t_offset_start);
+    elapsed_offset = toc(t_offset_start);
     total_elapsed = toc;
     percent = off_idx / num_offset * 100;
-    est_left = (num_offset-off_idx)*elapsed;
+    est_left = (num_offset-off_idx)*elapsed_offset;
     fprintf('偏离度 %d/%d (%.1f%%) 用时 %.2fs，预计剩余 %.2fs\n', ...
-        off_idx, num_offset, percent, elapsed, est_left);
+        off_idx, num_offset, percent, elapsed_offset, est_left);
 end
+close(hwb);
 fprintf('全部实验完成，总耗时 %.2fs\n', toc);
+
+save('../results/expA_main.mat', 'err_pos', 'err_rot', 'offset_list', 'labels', 'alg_labels', 'alg_colors', 'num_alg', 'num_cond', 'num_offset', 'num_points');

@@ -34,14 +34,27 @@ if num_sensors ~= size(d_list, 2)
     error('传感器测量数量(%d)和偏移数量(%d)不匹配', num_sensors, size(d_list, 2));
 end
 
+history.iter = [];
+history.resnorm = [];
+
+% 自定义输出函数
+function stop = outfun(x, optimValues, state)
+    stop = false;
+    switch state
+        case 'iter'
+            history.iter = [history.iter, x];
+            history.resnorm = [history.resnorm, optimValues.resnorm];
+    end
+end
+
 if isempty(options)
     options = optimoptions('lsqnonlin', ...
         'Algorithm', 'levenberg-marquardt', ...
-        'Display', 'off');
+        'Display', 'off', ...
+        'OutputFcn', @outfun);
+else
+    options.OutputFcn = @outfun;
 end
-
-history.iter = [];
-history.resnorm = [];
 
 [x_opt, resnorm, residual, exitflag, output] = lsqnonlin( ...
     @(x)lm_objective(x, m_pos, m_hat, m_norm, d_list, b_total, p_fixed), ...
@@ -53,7 +66,7 @@ stats.resnorm = resnorm;
 stats.residual = residual;
 stats.exitflag = exitflag;
 stats.output = output;
-stats.history = history;
+stats.history = history; % history.iter 每次迭代的x, history.resnorm每次迭代的残差
 
 % ===== 内部函数：优化目标函数 =====
 function residuals = lm_objective(x, m_pos, m_hat, m_norm, d_list, b_list, p)

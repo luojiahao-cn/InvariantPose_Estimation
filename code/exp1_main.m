@@ -2,29 +2,36 @@ clc; clear; close all;
 addpath('utils')
 addpath('Functions')
 
+% 设置随机种子
+rng(2025);
+
 %% 磁铁参数定义
-m_pos = [ 0 , 0.05;
-          0 , 0.02;
-          0 , 0.10]; % 磁铁位置 [m]
-
-m_hat = [ 0 , 0.7;
-          0 , 0.1;
-          1 , 0.7];  % 磁化方向（未归一化）
-
-m_hat = m_hat ./ vecnorm(m_hat); % 归一化磁化方向
-m_norm = [8e2 , 8e2];            % 磁矩幅值 [A·m²]
+m_pos = [
+    [-0.3; 0; 0], ...
+    [0.2; 0; 0]
+    ];
+m_hat = [
+    [1; 0; 0], ...
+    [0; 0; 1]
+    ];
+m_hat = m_hat ./ vecnorm(m_hat);
+m_norm = [8e2, 8e2];
 
 d_list_e = [
-    [0; 0; 0],...
-    [1e-3; 0; 0],...
-    [2e-3; 0; 0],...
-    [0; 1e-3; 0],...
-    [0; 0; 1e-3],...
-    % [1e-3; 0; 1e-3]
-];
-
+    [0; 0; 0], ...
+    [1e-3; 0; 0], ...
+    [-1e-3; 0; 0], ...
+    [0; 1e-3; 0], ...
+    [0; -1e-3; 0], ...
+    [0; 0; 1e-3], ...
+    [0; 0; -1e-3]
+    ];
 row_means = mean(d_list_e, 2);
 d_list = d_list_e - row_means;
+
+num_sensors = size(d_list, 2);
+num_magnets = size(m_pos, 2);
+
 
 theta_true = [0.1; 0.2; 0.3]; % 真实旋转向量 [rad]
 p_true = [0.05; -0.03; 0.04]; % 传感器阵列参考点真实位置 [m]
@@ -32,12 +39,6 @@ R_true = MatrixExp3(VecToso3(theta_true));
 
 % 计算传感器全局位置
 sensor_positions = p_true + R_true * d_list;
-
-num_sensors = size(sensor_positions, 2);
-num_magnets = size(m_pos, 2);
-
-% 设置随机种子
-rng(2025);
 
 %% 生成磁铁测量数据
 
@@ -104,23 +105,23 @@ for exp_idx = 1:num_experiments
 
     % ==== 算法调用 ====
     % LM
-    % [p_lm, R_lm, stats_lm] = estimate_pose_lm( ...
-    %     b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p );
+    [p_lm, R_lm, stats_lm] = estimate_pose_lm( ...
+        b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p );
     % ELM
-    % [p_elm, R_elm, stats_elm] = estimate_pose_elm( ...
-    %     b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p );
+    [p_elm, R_elm, stats_elm] = estimate_pose_elm( ...
+        b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p );
     % 所提算法
     [p_ours, R_ours, stats_ours] = estimate_pose_ours( ...
-        b_total, d_list, m_pos, m_hat, m_norm, p_init, R_true, p_true, options, lb_p, ub_p );
+        b_total, d_list, m_pos, m_hat, m_norm, p_init, R_init, R_true, p_true, options, lb_p, ub_p );
     % Rlm
     [p_Rlm, R_Rlm, stats_Rlm] = estimate_R_lm( ...
         b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_ours, options );
 
     % ==== 结果存储 ====
-    % results(exp_idx).p_lm    = p_lm;
-    % results(exp_idx).R_lm    = R_lm;
-    % results(exp_idx).p_elm   = p_elm;
-    % results(exp_idx).R_elm   = R_elm;
+    results(exp_idx).p_lm    = p_lm;
+    results(exp_idx).R_lm    = R_lm;
+    results(exp_idx).p_elm   = p_elm;
+    results(exp_idx).R_elm   = R_elm;
     results(exp_idx).p_ours  = p_ours;
     results(exp_idx).R_ours  = R_ours;
     results(exp_idx).p_Rlm   = p_Rlm;
@@ -132,14 +133,14 @@ for exp_idx = 1:num_experiments
     % results(exp_idx).init_rot_error = norm(R_init - R_true, 'fro');
 
     % LM
-    % results(exp_idx).lm_pos_error = norm(p_lm - p_true);
-    % results(exp_idx).lm_rot_error = norm(R_lm - R_true, 'fro');
-    % results(exp_idx).lm_field_error = calculate_field_errors(p_lm, R_lm, b_total, d_list, m_pos, m_hat, m_norm);
+    results(exp_idx).lm_pos_error = norm(p_lm - p_true);
+    results(exp_idx).lm_rot_error = norm(R_lm - R_true, 'fro');
+    results(exp_idx).lm_field_error = calculate_field_errors(p_lm, R_lm, b_total, d_list, m_pos, m_hat, m_norm);
 
     % ELM
-    % results(exp_idx).elm_pos_error = norm(p_elm - p_true);
-    % results(exp_idx).elm_rot_error = norm(R_elm - R_true, 'fro');
-    % results(exp_idx).elm_field_error = calculate_field_errors(p_elm, R_elm, b_total, d_list, m_pos, m_hat, m_norm);
+    results(exp_idx).elm_pos_error = norm(p_elm - p_true);
+    results(exp_idx).elm_rot_error = norm(R_elm - R_true, 'fro');
+    results(exp_idx).elm_field_error = calculate_field_errors(p_elm, R_elm, b_total, d_list, m_pos, m_hat, m_norm);
 
     % 所提算法
     results(exp_idx).ours_pos_error = norm(p_ours - p_true);
