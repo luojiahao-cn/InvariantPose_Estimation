@@ -6,8 +6,8 @@ red = [255, 47, 23]/255;
 blue = [33, 77, 169]/255;
 green = [39, 132, 60]/255;
 black = [0, 0, 0]/255;
-alg_colors = [red; blue; green; black];
-labels = {'Free', 'Disturbance', 'Noise', 'Disturbance and noise'};
+alg_labels = {'LM','ELM','Ours'};
+alg_colors = [red; blue; black]; % 去掉green
 
 figure('Name','位置误差带');
 tiledlayout(1, 4, 'Padding','compact', 'TileSpacing','compact');
@@ -15,14 +15,16 @@ set(gcf, 'Units', 'centimeters', 'Position', 2*[0, 0, 17.8, 3], 'color', 'w');
 for mode = 1:num_cond
     nexttile();
     hold on;
-    h = gobjects(num_alg,1);
-    for i = 1:num_alg
+    h = gobjects(numel(alg_labels),1);
+    idx = 1;
+    for i = [1,2,4] % 只显示LM, ELM, Ours
         mu = mean(squeeze(err_pos(:,mode,i,:)),2);
         sigma = std(squeeze(err_pos(:,mode,i,:)),0,2);
         fill([offset_list, fliplr(offset_list)], ...
              [mu+sigma; flipud(mu-sigma)]', ...
-             alg_colors(i,:), 'FaceAlpha', 0.2, 'EdgeColor','none');
-        h(i) = plot(offset_list, mu, 'Color', alg_colors(i,:), 'LineWidth',1.5);
+             alg_colors(idx,:), 'FaceAlpha', 0.2, 'EdgeColor','none');
+        h(idx) = plot(offset_list, mu, 'Color', alg_colors(idx,:), 'LineWidth',1.5);
+        idx = idx + 1;
     end
     xlim([0, 0.05]); xticks(0:0.025:0.05);
     % ylim([0, 0.05]); yticks([0, 0.05]);
@@ -44,14 +46,16 @@ set(gcf, 'Units', 'centimeters', 'Position', 2*[0, 0, 17.8, 3], 'color', 'w');
 for mode = 1:num_cond
     nexttile();
     hold on;
-    h = gobjects(num_alg,1);
-    for i = 1:num_alg
+    h = gobjects(numel(alg_labels),1);
+    idx = 1;
+    for i = [1,2,4] % 只显示LM, ELM, Ours
         mu = mean(squeeze(err_rot(:,mode,i,:)),2);
         sigma = std(squeeze(err_rot(:,mode,i,:)),0,2);
         fill([offset_list, fliplr(offset_list)], ...
              [mu+sigma; flipud(mu-sigma)]', ...
-             alg_colors(i,:), 'FaceAlpha', 0.2, 'EdgeColor','none');
-        h(i) = plot(offset_list, mu, 'Color', alg_colors(i,:), 'LineWidth',1.5);
+             alg_colors(idx,:), 'FaceAlpha', 0.2, 'EdgeColor','none');
+        h(idx) = plot(offset_list, mu, 'Color', alg_colors(idx,:), 'LineWidth',1.5);
+        idx = idx + 1;
     end
     xlim([0, 0.05]); xticks(0:0.025:0.05);
     set(gca, 'FontSize', 12, 'TickLabelInterpreter', 'latex', 'LineWidth', 1);

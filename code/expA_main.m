@@ -12,7 +12,7 @@ rng(2025);
 
 %% 参数设置
 num_points = 100; % 每个偏离度采样数量
-offset_list = linspace(0, 0.1, 21); % 初值偏离度（米）
+offset_list = linspace(0, 0.1, 51); % 初值偏离度（米）
 labels = {'无干扰噪声','仅干扰','仅噪声','干扰和噪声'};
 alg_labels = {'LM','ELM','Rlm','Ours'};
 alg_colors = lines(numel(alg_labels));
@@ -42,13 +42,17 @@ d_list = d_list_e - row_means;
 num_sensors = size(d_list, 2);
 num_magnets = size(m_pos, 2);
 
+% options = optimoptions('lsqnonlin', ...
+%     'Algorithm', 'levenberg-marquardt', ...
+%     'Display', 'off', ...
+%     'TolFun', 1e-6, ...
+%     'TolX', 1e-6, ...
+%     'MaxIter', 1000, ...
+%     'MaxFunctionEvaluations', 10000);
+
 options = optimoptions('lsqnonlin', ...
     'Algorithm', 'levenberg-marquardt', ...
-    'Display', 'off', ...
-    'TolFun', 1e-6, ...
-    'TolX', 1e-6, ...
-    'MaxIter', 1000, ...
-    'MaxFunctionEvaluations', 10000);
+    'Display', 'off');
 
 workspace_center = [0; 0; 0];
 workspace_radius = 0.5;
@@ -56,7 +60,7 @@ lb_p = workspace_center - workspace_radius;
 ub_p = workspace_center + workspace_radius;
 
 noise_level = 3e-5;
-disturbance = [0; 0; 1e-4];
+disturbance = [0; 0; 2e-3];
 
 num_alg = numel(alg_labels);
 num_cond = numel(labels);
@@ -110,8 +114,9 @@ for off_idx = 1:num_offset
 
         % 生成初值
         init_error = -1 + 2 * rand(3,1);
-        p_init = p_true + offset * init_error;
-        theta_init = -pi + 2*pi*init_error;
+        p_init = p_true + offset * init_error; 
+        % theta_init = -pi + 2*pi*init_error;
+        theta_init = theta_true + 0.5 * init_error;
         R_init = MatrixExp3(VecToso3(theta_init));
 
         % 四种情况

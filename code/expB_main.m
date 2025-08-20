@@ -67,9 +67,12 @@ for beta_idx = 1:num_beta
     beta = beta_list(beta_idx);
     t_beta_start = tic;
     for pt_idx = 1:num_points
-        % 随机生成真值
-        theta_true = -pi + 2*pi*rand(3,1);
-        p_true = -1e-1 + 2e-1*rand(3,1);
+        % 沿螺旋路径生成真值
+        t = (pt_idx-1) / num_points * 4*pi; % 螺旋角度
+        z = 0.2 * (pt_idx-1) / num_points;  % 螺旋高度
+        radius = 0.08;
+        p_true = [radius*cos(t); radius*sin(t); z];
+        theta_true = [0.5*t; 0.3*t; 0.2*t]; % 旋转随t变化
         R_true = MatrixExp3(VecToso3(theta_true));
         sensor_positions = p_true + R_true * d_list;
 
@@ -160,3 +163,30 @@ ylabel('$\|R^T R - I\|_F$', 'Interpreter','latex');
 title('beta参数对R^T R损失的影响');
 legend('Ours','RLM');
 grid on;
+
+% 3D轨迹可视化（实际与估计位置，点状显示）
+figure('Name','3D位置轨迹','Color','white');
+hold on;
+colors = lines(2);
+for beta_idx = 1:num_beta
+    p_true_traj = zeros(3, num_points);
+    p_ours_traj = zeros(3, num_points);
+    for pt_idx = 1:num_points
+        t = (pt_idx-1) / num_points * 4*pi;
+        z = 0.2 * (pt_idx-1) / num_points;
+        radius = 0.08;
+        p_true_traj(:, pt_idx) = [radius*cos(t); radius*sin(t); z];
+        p_ours_traj(:, pt_idx) = err_pos(beta_idx, pt_idx) + p_true_traj(:, pt_idx); % 估计位置近似
+    end
+    scatter3(p_true_traj(1,:), p_true_traj(2,:), p_true_traj(3,:), 36, colors(1,:), 'filled', 'DisplayName', 'True');
+    scatter3(p_ours_traj(1,:), p_ours_traj(2,:), p_ours_traj(3,:), 36, colors(2,:), 'o', 'DisplayName', 'Estimated');
+    break; % 只画一个beta的轨迹
+end
+xlabel('X (m)');
+ylabel('Y (m)');
+zlabel('Z (m)');
+title('实际与估计位置轨迹（螺旋路径）');
+legend('show');
+grid on;
+axis equal;
+view(3);
