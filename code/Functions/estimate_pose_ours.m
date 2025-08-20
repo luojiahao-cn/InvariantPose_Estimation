@@ -62,15 +62,17 @@ b_bar = b_total * Q_bar; % 计算bBar
 lb = lb_p(:);
 ub = ub_p(:);
 fun22 = @(p) obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt);
-Jp = numJacobian(fun22, p_true);
-rank(Jp);
-svd(Jp);
-c = cond(Jp);
+% Jp = numJacobian(fun22, p_true)
+% rank(Jp)
+% svd(Jp)
+% c = cond(Jp)
 p_est = lsqnonlin(fun22, p_init, lb, ub, options);
 %% Stage #2: Estimate for rotation \hat{R}
 [b_p, A_p] = calcFieldAndGradient(p_est, m_pos, m_hat, m_norm);
-B_bar = b_p * ones(1, num_sensors) * Q_bar;
+B_matrix = b_p * ones(1, num_sensors);
+B_bar = B_matrix * Q_bar;
 [~, R_init_est] = estiamteR(b_bar, B_bar, A_p, X_opt);
+% R_est = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init_est, beta);
 R_est = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init_est, beta);
 stats.X_opt = X_opt;         % 估计的梯度矩阵
 stats.R_iter_history = R_est.R_iter_history; % 每次迭代的R

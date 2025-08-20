@@ -11,7 +11,7 @@ addpath('Functions')
 rng(2025);
 
 %% 参数设置
-num_points = 100; % 每个偏离度采样数量
+num_points = 10; % 每个偏离度采样数量
 offset_list = linspace(0, 0.1, 51); % 初值偏离度（米）
 labels = {'无干扰噪声','仅干扰','仅噪声','干扰和噪声'};
 alg_labels = {'LM','ELM','Rlm','Ours'};
@@ -115,8 +115,8 @@ for off_idx = 1:num_offset
         % 生成初值
         init_error = -1 + 2 * rand(3,1);
         p_init = p_true + offset * init_error; 
-        % theta_init = -pi + 2*pi*init_error;
-        theta_init = theta_true + 0.5 * init_error;
+        theta_init = -pi + 2*pi*init_error;
+        theta_init = theta_true + offset * 10 * theta_init;
         R_init = MatrixExp3(VecToso3(theta_init));
 
         % 四种情况
