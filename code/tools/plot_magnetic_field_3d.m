@@ -17,6 +17,13 @@ magnet_radius = 0.3;    % Radius of cylindrical magnets
 magnet_height = 0.6;    % Height of cylindrical magnets
 magnetic_moment = 1.0;  % Magnetic dipole moment strength
 
+% Nature-inspired color scheme options
+north_color = [0.902, 0.294, 0.208]; % NPG red (#E64B35)
+south_color = [0.235, 0.329, 0.533]; % NPG blue (#3C5488)
+field_line_color = [0.439, 0.502, 0.565]; % slate gray (#708090)
+coupling_line_color = field_line_color;  
+
+
 % Define magnet positions (left, right, top)
 magnet_positions = [
     -2.0,  0.0,  0.0;   % Left magnet
@@ -26,7 +33,7 @@ magnet_positions = [
 
 % Define magnet orientations (magnetic dipole directions)
 magnet_orientations = [
-     1,  0,  0;    % Left magnet: north pole pointing right (+X)
+     -1,  0,  0;    % Left magnet: north pole pointing right (+X)
     -1,  0,  0;    % Right magnet: north pole pointing left (-X)
      0,  0, -1     % Top magnet: north pole pointing down (-Z)
 ];
@@ -99,9 +106,10 @@ for i = 1:3
         end
     end
     
-    % Assign colors: red for north, blue for south
-    color_map(:, :, 1) = north_mask;        % Red channel
-    color_map(:, :, 3) = ~north_mask;       % Blue channel
+    % Assign colors using Nature color scheme
+    color_map(:, :, 1) = north_mask * north_color(1) + (~north_mask) * south_color(1);  % Red channel
+    color_map(:, :, 2) = north_mask * north_color(2) + (~north_mask) * south_color(2);  % Green channel
+    color_map(:, :, 3) = north_mask * north_color(3) + (~north_mask) * south_color(3);  % Blue channel
     
     % Plot the cylinder as solid
     surf(x_final, y_final, z_final, color_map, 'EdgeColor', 'none', 'FaceAlpha', 1.0);
@@ -126,21 +134,21 @@ for i = 1:3
         Y_cap_final_bottom = Y_cap + pos(2);
         Z_cap_final_bottom = Z_cap + pos(3);
         
-        % Color the caps based on pole orientation
+        % Color the caps based on pole orientation using Nature colors
         if orientation(1) > 0  % North pole pointing in +X direction
-            % Top cap is at +X (north pole) - RED
+            % Top cap is at +X (north pole) - Nature north color
             surf(X_cap_final_top, Y_cap_final_top, Z_cap_final_top, ...
-                 repmat(reshape([1 0 0], 1, 1, 3), size(Y_cap)), 'EdgeColor', 'none', 'FaceAlpha', 1.0);
-            % Bottom cap is at -X (south pole) - BLUE
+                 repmat(reshape(north_color, 1, 1, 3), size(Y_cap)), 'EdgeColor', 'none', 'FaceAlpha', 1.0);
+            % Bottom cap is at -X (south pole) - Nature south color
             surf(X_cap_final_bottom, Y_cap_final_bottom, Z_cap_final_bottom, ...
-                 repmat(reshape([0 0 1], 1, 1, 3), size(Y_cap)), 'EdgeColor', 'none', 'FaceAlpha', 1.0);
+                 repmat(reshape(south_color, 1, 1, 3), size(Y_cap)), 'EdgeColor', 'none', 'FaceAlpha', 1.0);
         else  % North pole pointing in -X direction
-            % Top cap is at +X (south pole) - BLUE
+            % Top cap is at +X (south pole) - Nature south color
             surf(X_cap_final_top, Y_cap_final_top, Z_cap_final_top, ...
-                 repmat(reshape([0 0 1], 1, 1, 3), size(Y_cap)), 'EdgeColor', 'none', 'FaceAlpha', 1.0);
-            % Bottom cap is at -X (north pole) - RED
+                 repmat(reshape(south_color, 1, 1, 3), size(Y_cap)), 'EdgeColor', 'none', 'FaceAlpha', 1.0);
+            % Bottom cap is at -X (north pole) - Nature north color
             surf(X_cap_final_bottom, Y_cap_final_bottom, Z_cap_final_bottom, ...
-                 repmat(reshape([1 0 0], 1, 1, 3), size(Y_cap)), 'EdgeColor', 'none', 'FaceAlpha', 1.0);
+                 repmat(reshape(north_color, 1, 1, 3), size(Y_cap)), 'EdgeColor', 'none', 'FaceAlpha', 1.0);
         end
     else  % Z-oriented magnet
         % Create circular caps
@@ -158,21 +166,21 @@ for i = 1:3
         Z_cap_final_top = Z_cap_top + pos(3);
         Z_cap_final_bottom = Z_cap_bottom + pos(3);
         
-        % Color the caps based on pole orientation
+        % Color the caps based on pole orientation using Nature colors
         if orientation(3) < 0  % North pole pointing in -Z direction (down)
-            % Top cap is at +Z (south pole) - BLUE
+            % Top cap is at +Z (south pole) - Nature south color
             surf(X_cap_final, Y_cap_final, Z_cap_final_top, ...
-                 repmat(reshape([0 0 1], 1, 1, 3), size(X_cap)), 'EdgeColor', 'none', 'FaceAlpha', 1.0);
-            % Bottom cap is at -Z (north pole) - RED
+                 repmat(reshape(south_color, 1, 1, 3), size(X_cap)), 'EdgeColor', 'none', 'FaceAlpha', 1.0);
+            % Bottom cap is at -Z (north pole) - Nature north color
             surf(X_cap_final, Y_cap_final, Z_cap_final_bottom, ...
-                 repmat(reshape([1 0 0], 1, 1, 3), size(X_cap)), 'EdgeColor', 'none', 'FaceAlpha', 1.0);
+                 repmat(reshape(north_color, 1, 1, 3), size(X_cap)), 'EdgeColor', 'none', 'FaceAlpha', 1.0);
         else  % North pole pointing in +Z direction (up)
-            % Top cap is at +Z (north pole) - RED
+            % Top cap is at +Z (north pole) - Nature north color
             surf(X_cap_final, Y_cap_final, Z_cap_final_top, ...
-                 repmat(reshape([1 0 0], 1, 1, 3), size(X_cap)), 'EdgeColor', 'none', 'FaceAlpha', 1.0);
-            % Bottom cap is at -Z (south pole) - BLUE
+                 repmat(reshape(north_color, 1, 1, 3), size(X_cap)), 'EdgeColor', 'none', 'FaceAlpha', 1.0);
+            % Bottom cap is at -Z (south pole) - Nature south color
             surf(X_cap_final, Y_cap_final, Z_cap_final_bottom, ...
-                 repmat(reshape([0 0 1], 1, 1, 3), size(X_cap)), 'EdgeColor', 'none', 'FaceAlpha', 1.0);
+                 repmat(reshape(south_color, 1, 1, 3), size(X_cap)), 'EdgeColor', 'none', 'FaceAlpha', 1.0);
         end
     end
 end
@@ -349,35 +357,17 @@ for i = 1:size(starting_points, 1)
         end
         
         if is_coupling_line
-            % Use cyan color for coupling field lines
+            % Use Nature coupling line color
             plot3(field_line(:, 1), field_line(:, 2), field_line(:, 3), ...
-                  'Color', 'cyan', 'LineWidth', 2.0, 'LineStyle', '-');
+                  'Color', coupling_line_color, 'LineWidth', 1.2, 'LineStyle', '-');
         else
-            % Use blue color for regular field lines
+            % Use Nature field line color
             plot3(field_line(:, 1), field_line(:, 2), field_line(:, 3), ...
-                  'Color', 'blue', 'LineWidth', 1.5, 'LineStyle', '-');
+                  'Color', field_line_color, 'LineWidth', 1.2, 'LineStyle', '-');
         end
     end
 end
 
-% Enhance plot appearance
-xlabel('X Position (m)', 'FontSize', 14, 'FontWeight', 'bold');
-ylabel('Y Position (m)', 'FontSize', 14, 'FontWeight', 'bold');
-zlabel('Z Position (m)', 'FontSize', 14, 'FontWeight', 'bold');
-title('3D Visualization of Three Permanent Magnets and Magnetic Field Lines', ...
-      'FontSize', 16, 'FontWeight', 'bold');
-
-% Add legend
-% Create dummy patches for legend
-h1 = patch([0 1 1 0], [0 0 1 1], [0 0 0 0], 'red', 'EdgeColor', 'none', 'Visible', 'off');
-h2 = patch([0 1 1 0], [0 0 1 1], [0 0 0 0], 'blue', 'EdgeColor', 'none', 'Visible', 'off');
-h3 = plot3(NaN, NaN, NaN, 'b-', 'LineWidth', 1.5);
-h4 = plot3(NaN, NaN, NaN, 'c-', 'LineWidth', 2.0);
-
-legend_handles = [h1, h2, h3, h4];
-legend_labels = {'North Pole (Red)', 'South Pole (Blue)', 'Individual Field Lines', 'Inter-magnet Coupling Lines'};
-
-legend(legend_handles, legend_labels, 'Location', 'northeast', 'FontSize', 12);
 
 % Set lighting and material properties
 lighting gouraud;
@@ -392,6 +382,11 @@ set(gcf, 'Color', 'w');
 % Set axis properties
 set(gca, 'FontSize', 12);
 set(gca, 'LineWidth', 1.5);
+
+% Remove axis tick marks and numbers
+set(gca, 'XTickLabel', []);
+set(gca, 'YTickLabel', []);
+set(gca, 'ZTickLabel', []);
 
 % Add subtle grid
 grid on;
