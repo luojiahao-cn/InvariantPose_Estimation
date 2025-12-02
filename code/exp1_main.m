@@ -32,7 +32,6 @@ d_list = d_list_e - row_means;
 num_sensors = size(d_list, 2);
 num_magnets = size(m_pos, 2);
 
-
 theta_true = [0.1; 0.2; 0.3]; % 真实旋转向量 [rad]
 p_true = [0.05; -0.03; 0.04]; % 传感器阵列参考点真实位置 [m]
 R_true = MatrixExp3(VecToso3(theta_true));

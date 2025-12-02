@@ -1,6 +1,6 @@
 function [p_est, R_est, stats] = estimate_pose_ours(b_total, d_list, m_pos, m_hat, m_norm, p_init, R_init, R_true, p_true, options, lb_p, ub_p, varargin)
 % PROPOSED_METHOD_POSE_ESTIMATION 使用所提方法估计传感器姿态（位置和方向）
-%
+% 该方法使用公式(11)
 % 输入参数：
 %   b_total  - 3×N传感器测量矩阵（局部坐标系），单位：T
 %   d_list   - 3×N位移矩阵，传感器在参考坐标系中的偏移，单位：m
@@ -35,8 +35,8 @@ for idx = 1:size(pairs,1)
     B_matrix(:, idx) = b_total(:, j) - b_total(:, i);
 end
 %% 阶段检查 对应公式2
-[~, A_p_true] = calcFieldAndGradient(p_true, m_pos, m_hat, m_norm);
-X_true = R_true'*A_p_true*R_true;
+% [~, A_p_true] = calcFieldAndGradient(p_true, m_pos, m_hat, m_norm);
+% X_true = R_true'*A_p_true*R_true;
 % norm(R_true'*b_p*ones(1,num_sensors)+R_true'*A_p*R_true*d_list - b_total, 'fro')
 % norm(R_true'*A_p*R_true*D_matrix - B_matrix, 'fro')
 %% 估计局部梯度张量
@@ -59,21 +59,27 @@ r = rank(d_list); % 构型判据
 Q_bar = Q(:, r+1:end);
 b_bar = b_total * Q_bar; % 计算bBar
 % 优化第一阶段位置
-lb = lb_p(:);
-ub = ub_p(:);
 fun22 = @(p) obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt);
 % Jp = numJacobian(fun22, p_true)
 % rank(Jp)
 % svd(Jp)
 % c = cond(Jp)
-p_est = lsqnonlin(fun22, p_init, lb, ub, options);
+p_est = lsqnonlin(fun22, p_init, lb_p, ub_p, options);
 %% Stage #2: Estimate for rotation \hat{R}
 [b_p, A_p] = calcFieldAndGradient(p_est, m_pos, m_hat, m_norm);
 B_matrix = b_p * ones(1, num_sensors);
 B_bar = B_matrix * Q_bar;
 [~, R_init_est] = estiamteR(b_bar, B_bar, A_p, X_opt);
-% R_est = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init_est, beta);
-R_est = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init_est, beta);
+
+L = norm(A_p)*norm(X_opt)/(norm(B_bar)*norm(b_bar));
+% L = 1000;
+% L = norm(A_p)*norm(X_opt);
+% mu = L; %L; % regularization parameter
+mu = 1e6;
+% 使用外部beta变量
+
+% R_est = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu,beta); % using R_init
+R_est = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init_est, mu, beta); % using R_init_est
 stats.X_opt = X_opt;         % 估计的梯度矩阵
 stats.R_iter_history = R_est.R_iter_history; % 每次迭代的R
 stats.delta_history = R_est.delta_history;   % 每次迭代的delta
@@ -101,19 +107,14 @@ term3 = det(A_p) - det(X);
 res = [term1; term2; term3];
 end
 %% Estimate R
-function R_struct = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, beta)
+function R_struct = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu, beta)
 %% Iterative method:
 LA = min(eig(A_p)) - 1e-3;
 LX = min(eig(X_opt)) - 1e-3;
-At = A_p - LA * eye(3);
-Xt = X_opt - LX * eye(3);
-L = norm(A_p)*norm(X_opt)/(norm(B_bar)*norm(b_bar));
-% L = 1000;
-% L = norm(A_p)*norm(X_opt);
-% mu = L; %L; % regularization parameter
-mu = 1e6;
-% 使用外部beta变量
-M = @(R) mu * B_bar * b_bar' + 2 * At * R * Xt + beta * R;
+Abar = A_p - LA * eye(3);
+Xbar = X_opt - LX * eye(3);
+M = @(R) 2 * Abar * R * Xbar + mu * B_bar * b_bar';
+Mbar = @(R) M(R) + beta * R;
 % f = @(R) trace(R' * A_p * R * X_opt + mu * R' * B_bar * b_bar' + beta * R);
 % fbar = @(R) trace(R' * At * R * Xt + mu * R' * B_bar * b_bar' + beta * R);
 % skw = @(R) 0.5 * (R - R');
@@ -125,7 +126,7 @@ R = R_init;
 R_iter_history = {};
 delta_history = [];
 while k < kmax && delta > 1e-5
-    [U, ~, V] = svd(M(R));
+    [U, ~, V] = svd(Mbar(R));
     R_opt = U*diag([1,1,det(U*V')])*V';
     delta = norm(R_opt - R, 'fro');
     R_iter_history{end+1} = R_opt;
