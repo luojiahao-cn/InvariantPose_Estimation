@@ -1,23 +1,25 @@
 clc; clear; close all;
-addpath('utils')
-addpath('Functions')
-
+addpath('./utils')
+addpath('./Functions')
 % 设置随机种子
 rng(2025);
 
 %% 磁铁参数定义
 m_pos = [
-    [-0.3; 0; 0], ...
-    [0.2; 0; 0]
+    [-0.1125;0.0002;0.3099], ...
+    [0.1125;0.0002;0.3099]
     ];
 m_hat = [
-    [1; 0; 0], ...
-    [0; 0; 1]
+    [-0.2588;0;0.9659], ...
+    [0.2588;0;0.9659]
     ];
 m_hat = m_hat ./ vecnorm(m_hat);
-m_norm = [8e2, 8e2];
+m_norm = [300, 300];
 
-d_list_e = [
+p_uncertainty = 0.05;
+r_uncertainty = 0.1;
+
+d_list = [
     [0; 0; 0], ...
     [1e-3; 0; 0], ...
     [-1e-3; 0; 0], ...
@@ -26,14 +28,14 @@ d_list_e = [
     [0; 0; 1e-3], ...
     [0; 0; -1e-3]
     ];
-row_means = mean(d_list_e, 2);
-d_list = d_list_e - row_means;
+% row_means = mean(d_list_e, 2);
+% d_list = d_list - row_means;
 
 num_sensors = size(d_list, 2);
 num_magnets = size(m_pos, 2);
 
-theta_true = [0.1; 0.2; 0.3]; % 真实旋转向量 [rad]
-p_true = [0.05; -0.03; 0.04]; % 传感器阵列参考点真实位置 [m]
+theta_true = [0; 0; 1]; % 真实旋转向量 [rad]
+p_true = [0; 0; 0]; % 传感器阵列参考点真实位置 [m]
 R_true = MatrixExp3(VecToso3(theta_true));
 
 % 计算传感器全局位置
@@ -87,7 +89,7 @@ options = optimoptions('lsqnonlin', ...
 
 % 工作空间约束参数
 workspace_center = [0; 0; 0];
-workspace_radius = 0.5;
+workspace_radius = 0.15;
 
 % 增加位置约束
 lb_p = workspace_center - workspace_radius; % 下界
@@ -97,9 +99,9 @@ for exp_idx = 1:num_experiments
     fprintf('\n===== 实验 %d/%d =====\n', exp_idx, num_experiments);
 
     % ==== 生成初始扰动 ====
-    init_error = -1 + 2 * rand(3,1);
-    p_init = p_true + 0.05 * init_error;
-    theta_init = theta_true + 0.1 * init_error;
+    init_error = -1 + 2 * rand(3,1); % [-1, 1]
+    p_init = p_true + p_uncertainty * init_error;
+    theta_init = theta_true + r_uncertainty * init_error;
     R_init = MatrixExp3(VecToso3(theta_init));
 
     % ==== 算法调用 ====
@@ -110,8 +112,10 @@ for exp_idx = 1:num_experiments
     [p_elm, R_elm, stats_elm] = estimate_pose_elm( ...
         b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p );
     % 所提算法
+    mu = 1e3; beta = 1;
+    params = struct('R_true', R_true, 'p_true', p_true, 'mu', mu, 'beta', beta);
     [p_ours, R_ours, stats_ours] = estimate_pose_ours( ...
-        b_total, d_list, m_pos, m_hat, m_norm, p_init, R_init, R_true, p_true, options, lb_p, ub_p );
+        b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p, params);
     % Rlm
     [p_Rlm, R_Rlm, stats_Rlm] = estimate_R_lm( ...
         b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_ours, options );

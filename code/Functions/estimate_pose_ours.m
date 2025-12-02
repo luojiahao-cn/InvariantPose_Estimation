@@ -1,4 +1,4 @@
-function [p_est, R_est, stats] = estimate_pose_ours(b_total, d_list, m_pos, m_hat, m_norm, p_init, R_init, R_true, p_true, options, lb_p, ub_p, varargin)
+function [p_est, R_est, stats] = estimate_pose_ours(b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p, params)
 % PROPOSED_METHOD_POSE_ESTIMATION 使用所提方法估计传感器姿态（位置和方向）
 % 该方法使用公式(11)
 % 输入参数：
@@ -13,15 +13,8 @@ function [p_est, R_est, stats] = estimate_pose_ours(b_total, d_list, m_pos, m_ha
 %   p_est_22 - 第二阶段优化后的位置估计
 %   R_est    - 估计的旋转矩阵
 %   stats    - 包含中间结果和统计信息的结构体
-
+R_init = MatrixExp3(VecToso3(theta_init));
 num_sensors = size(b_total, 2);
-
-% --------- 支持可选beta参数 ---------
-if ~isempty(varargin) && isnumeric(varargin{1})
-    beta = varargin{1};
-else
-    beta = 1e-3;
-end
 
 %% 构建磁场差矩阵和位移矩阵
 pairs = nchoosek(1:num_sensors, 2);
@@ -35,7 +28,8 @@ for idx = 1:size(pairs,1)
     B_matrix(:, idx) = b_total(:, j) - b_total(:, i);
 end
 %% 阶段检查 对应公式2
-% [~, A_p_true] = calcFieldAndGradient(p_true, m_pos, m_hat, m_norm);
+% [~, A_p_true] = calcFieldAndGradient(params.p_true, m_pos, m_hat, m_norm);
+% R_true = params.R_true;
 % X_true = R_true'*A_p_true*R_true;
 % norm(R_true'*b_p*ones(1,num_sensors)+R_true'*A_p*R_true*d_list - b_total, 'fro')
 % norm(R_true'*A_p*R_true*D_matrix - B_matrix, 'fro')
@@ -69,17 +63,18 @@ p_est = lsqnonlin(fun22, p_init, lb_p, ub_p, options);
 [b_p, A_p] = calcFieldAndGradient(p_est, m_pos, m_hat, m_norm);
 B_matrix = b_p * ones(1, num_sensors);
 B_bar = B_matrix * Q_bar;
-[~, R_init_est] = estiamteR(b_bar, B_bar, A_p, X_opt);
+[R_init_est1, R_init_est2] = estiamteR(b_bar, B_bar, A_p, X_opt);
 
 L = norm(A_p)*norm(X_opt)/(norm(B_bar)*norm(b_bar));
 % L = 1000;
 % L = norm(A_p)*norm(X_opt);
 % mu = L; %L; % regularization parameter
-mu = 1e6;
+% mu = 1e3;
+% beta = 1e-3;
 % 使用外部beta变量
 
-% R_est = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu,beta); % using R_init
-R_est = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init_est, mu, beta); % using R_init_est
+R_est = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init_est1, params.mu, params.beta); % using R_init
+% R_est = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init_est, mu, beta); % using R_init_est
 stats.X_opt = X_opt;         % 估计的梯度矩阵
 stats.R_iter_history = R_est.R_iter_history; % 每次迭代的R
 stats.delta_history = R_est.delta_history;   % 每次迭代的delta
