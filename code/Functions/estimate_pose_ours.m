@@ -73,8 +73,8 @@ L = norm(A_p)*norm(X_opt)/(norm(B_bar)*norm(b_bar));
 % beta = 1e-3;
 % 使用外部beta变量
 
-R_est = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init_est1, params.mu, params.beta); % using R_init
-% R_est = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init_est, mu, beta); % using R_init_est
+R_est = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, params.mu, params.beta); % using R_init
+% R_est = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init_est2, params.mu, params.beta); % using R_init_est
 stats.X_opt = X_opt;         % 估计的梯度矩阵
 stats.R_iter_history = R_est.R_iter_history; % 每次迭代的R
 stats.delta_history = R_est.delta_history;   % 每次迭代的delta

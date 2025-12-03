@@ -2,168 +2,46 @@
 clc; clear; close all;
 addpath('./utils')
 addpath('./Functions')
+
+%% ========== 参数配置 ==========
+% 所有实验参数统一在 get_experiment_params() 函数中配置
+% 如需修改参数，请编辑 code/utils/get_experiment_params.m 文件
+params = get_experiment_params();
+
 % 设置随机种子
-rng(2025);
+rng(params.experiment.random_seed);
 
-%% 磁铁参数定义
-m_pos = [
-    [-0.1125;0.0002;0.3099], ...
-    [0.1125;0.0002;0.3099]
-    ];
-m_hat = [
-    [-0.2588;0;0.9659], ...
-    [0.2588;0;0.9659]
-    ];
-m_hat = m_hat ./ vecnorm(m_hat);
-m_norm = [300, 300];
+%% ========== 生成磁铁测量数据 ==========
+[b_total, B_total, gradb_total, gradB_total, sensor_positions] = ...
+    generate_magnetic_data(params);
 
-p_uncertainty = 0.05;
-r_uncertainty = 0.1;
-
-d_list = [
-    [0; 0; 0], ...
-    [1e-3; 0; 0], ...
-    [-1e-3; 0; 0], ...
-    [0; 1e-3; 0], ...
-    [0; -1e-3; 0], ...
-    [0; 0; 1e-3], ...
-    [0; 0; -1e-3]
-    ];
-% row_means = mean(d_list_e, 2);
-% d_list = d_list - row_means;
-
-num_sensors = size(d_list, 2);
-num_magnets = size(m_pos, 2);
-
-theta_true = [0; 0; 1]; % 真实旋转向量 [rad]
-p_true = [0; 0; 0]; % 传感器阵列参考点真实位置 [m]
+% 提取常用参数
+m_pos = params.magnet.m_pos;
+m_hat = params.magnet.m_hat;
+m_norm = params.magnet.m_norm;
+d_list = params.sensor.d_list;
+p_true = params.ground_truth.p_true;
+theta_true = params.ground_truth.theta_true;
 R_true = MatrixExp3(VecToso3(theta_true));
 
-% 计算传感器全局位置
-sensor_positions = p_true + R_true * d_list;
-
-%% 生成磁铁测量数据
-
-% 初始化磁场存储
-B_total = zeros(3, num_sensors);        % 全局坐标系磁场
-b_total = zeros(3, num_sensors);        % 局部坐标系磁场
-gradB_total = zeros(3, 3, num_sensors); % 全局坐标系梯度
-gradb_total = zeros(3, 3, num_sensors); % 局部坐标系梯度
-
-for sensor_idx = 1:num_sensors
-    % 临时存储全局坐标系下的总和
-    B_t = zeros(3, 1);
-    gradB_t = zeros(3, 3);
-
-    for magnet_idx = 1:num_magnets
-        % 计算相对位置（全局坐标系）
-        r = sensor_positions(:, sensor_idx) - m_pos(:, magnet_idx);
-
-        % 获取当前磁铁参数
-        moment_unit = m_hat(:, magnet_idx);
-        moment_mag = m_norm(magnet_idx);
-
-        % 计算磁场和梯度（全局坐标系）
-        [B_single, gradB_single] = dipole_b_and_gradb(r, moment_unit, moment_mag);
-
-        % 累加全局磁场和梯度
-        B_t = B_t + B_single;
-        gradB_t = gradB_t + gradB_single;
-    end
-
-    % 存储全局坐标系结果
-    B_total(:, sensor_idx) = B_t;
-    gradB_total(:, :, sensor_idx) = gradB_t;
-
-    % 转换到局部坐标系并存储
-    b_total(:, sensor_idx) = R_true' * B_t;
-    gradb_total(:, :, sensor_idx) = R_true' * gradB_t * R_true;
-end
-
-%% 多次实验设置
-num_experiments = 10; % 实验次数
-results = struct();
-
-options = optimoptions('lsqnonlin', ...
-    'Algorithm', 'levenberg-marquardt', ...
-    'Display', 'off');
-
-% 工作空间约束参数
-workspace_center = [0; 0; 0];
-workspace_radius = 0.15;
-
-% 增加位置约束
+%% ========== 工作空间约束设置 ==========
+workspace_center = params.workspace.center;
+workspace_radius = params.workspace.radius;
 lb_p = workspace_center - workspace_radius; % 下界
 ub_p = workspace_center + workspace_radius; % 上界
 
+%% ========== 多次实验执行 ==========
+num_experiments = params.experiment.num_experiments;
+results = struct();
+
 for exp_idx = 1:num_experiments
-    fprintf('\n===== 实验 %d/%d =====\n', exp_idx, num_experiments);
-
-    % ==== 生成初始扰动 ====
-    init_error = -1 + 2 * rand(3,1); % [-1, 1]
-    p_init = p_true + p_uncertainty * init_error;
-    theta_init = theta_true + r_uncertainty * init_error;
-    R_init = MatrixExp3(VecToso3(theta_init));
-
-    % ==== 算法调用 ====
-    % LM
-    [p_lm, R_lm, stats_lm] = estimate_pose_lm( ...
-        b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p );
-    % ELM
-    [p_elm, R_elm, stats_elm] = estimate_pose_elm( ...
-        b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p );
-    % 所提算法
-    mu = 1e3; beta = 1;
-    params = struct('R_true', R_true, 'p_true', p_true, 'mu', mu, 'beta', beta);
-    [p_ours, R_ours, stats_ours] = estimate_pose_ours( ...
-        b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p, params);
-    % Rlm
-    [p_Rlm, R_Rlm, stats_Rlm] = estimate_R_lm( ...
-        b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_ours, options );
-
-    % ==== 结果存储 ====
-    results(exp_idx).p_lm    = p_lm;
-    results(exp_idx).R_lm    = R_lm;
-    results(exp_idx).p_elm   = p_elm;
-    results(exp_idx).R_elm   = R_elm;
-    results(exp_idx).p_ours  = p_ours;
-    results(exp_idx).R_ours  = R_ours;
-    results(exp_idx).p_Rlm   = p_Rlm;
-    results(exp_idx).R_Rlm   = R_Rlm;
-
-    % ==== 误差分析 ====
-    % 初始误差
-    % results(exp_idx).init_pos_error = norm(p_init - p_true);
-    % results(exp_idx).init_rot_error = norm(R_init - R_true, 'fro');
-
-    % LM
-    results(exp_idx).lm_pos_error = norm(p_lm - p_true);
-    results(exp_idx).lm_rot_error = norm(R_lm - R_true, 'fro');
-    results(exp_idx).lm_field_error = calculate_field_errors(p_lm, R_lm, b_total, d_list, m_pos, m_hat, m_norm);
-
-    % ELM
-    results(exp_idx).elm_pos_error = norm(p_elm - p_true);
-    results(exp_idx).elm_rot_error = norm(R_elm - R_true, 'fro');
-    results(exp_idx).elm_field_error = calculate_field_errors(p_elm, R_elm, b_total, d_list, m_pos, m_hat, m_norm);
-
-    % 所提算法
-    results(exp_idx).ours_pos_error = norm(p_ours - p_true);
-    results(exp_idx).ours_rot_error = norm(R_ours - R_true, 'fro');
-    results(exp_idx).ours_field_error = calculate_field_errors(p_ours, R_ours, b_total, d_list, m_pos, m_hat, m_norm);
-
-    % Rlm
-    results(exp_idx).Rlm_pos_error = norm(p_Rlm - p_true);
-    results(exp_idx).Rlm_rot_error = norm(R_Rlm - R_true, 'fro');
-    results(exp_idx).Rlm_field_error = calculate_field_errors(p_Rlm, R_Rlm, b_total, d_list, m_pos, m_hat, m_norm);
-
-    % ==== 其它算法（如union）可按需补充 ====
+    results(exp_idx) = run_single_experiment(exp_idx, num_experiments, params, ...
+        b_total, d_list, p_true, R_true, lb_p, ub_p);
 end
 
-% 统一可视化所有实验结果
+%% ========== 结果可视化与分析 ==========
 visualize_pose(m_pos, m_hat, m_norm, p_true, R_true, results, d_list);
-
 display_statistical_summary(results, num_experiments);
-
 plot_error_distributions(results);
 
 
