@@ -1,12 +1,14 @@
 %% Estimate R
-function R_struct = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu, beta)
+function R_struct = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu, beta, R_true)
     %% Iterative method:
     LA = min(eig(A_p)) - 1e-3;
     LX = min(eig(X_opt)) - 1e-3;
     Abar = A_p - LA * eye(3);
     Xbar = X_opt - LX * eye(3);
     L = 4 * norm(Abar) * norm(Xbar);
-    beta = beta * L;
+    % beta = beta * L;
+    mu = L;
+    beta = beta * L / mu;
 
     M = @(R) 2 * Abar * R * Xbar + mu * B_bar * b_bar';
 
@@ -21,11 +23,13 @@ function R_struct = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu, beta)
     R = R_init;
     R_iter_history = {};
     delta_history = [];
-    while k < kmax && delta > 1e-5
+    while k < kmax && delta > 0
         [U, ~, V] = svd(Mbar(R));
         R_opt = U*diag([1,1,det(U*V')])*V';
+        eR = norm(R_true - R_opt, 'fro');
         delta = norm(R_opt - R, 'fro');
         R_iter_history{end+1} = R_opt;
+        eR_history(end+1) = eR;
         delta_history(end+1) = delta;
         R = R_opt;
         k = k + 1;
@@ -33,7 +37,14 @@ function R_struct = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu, beta)
     if k == kmax
         warning('迭代未收敛，可能需要调整参数');
     end
+
     R_struct.R = R;
     R_struct.R_iter_history = R_iter_history;
+    R_struct.eR_history = eR_history;
+    R_struct.L = L;
+    R_struct.k = k;
+    R_struct.kmax = kmax;
+    R_struct.deltabd = 1e-5;
+    R_struct.beta = beta;
     R_struct.delta_history = delta_history;
     end

@@ -2,6 +2,7 @@
 clc; clear; close all;
 addpath('./utils')
 addpath('./Functions')
+addpath('./tools')
 
 %% ========== 参数配置 ==========
 params = get_experiment_params();
@@ -26,9 +27,8 @@ fprintf('已生成 %d 个测试点\n', num_test_points);
 %% ========== 批量执行实验 ==========
 batch_results = run_beta_batch_experiment(params, test_points, num_trials_per_point);
 
-%% ========== 结果分析 ==========
-
 %% ========== 结果可视化 ==========
+plot_beta_results(batch_results);
 
 % %% ========== 保存结果 ==========
 % save('results/exp1_batch_results.mat', 'batch_results', 'test_points', 'params');

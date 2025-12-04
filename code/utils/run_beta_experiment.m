@@ -1,4 +1,4 @@
-function R_beta_history = run_beta_experiment(exp_idx, num_experiments, params, ...
+function results = run_beta_experiment(exp_idx, num_experiments, params, ...
     b_total, d_list, p_true)
 % RUN_BETA_EXPERIMENT 执行beta参数实验
 % 输入：
@@ -30,9 +30,11 @@ init_error = -1 + 2 * rand(3,1); % [-1, 1]
 p_init = p_true + p_uncertainty * init_error;
 theta_init = theta_true + r_uncertainty * init_error;
 % ==== 算法调用 ====
+R_true = MatrixExp3(VecToso3(theta_true));
 R_init = MatrixExp3(VecToso3(theta_init));
 %% 构建磁场差矩阵和位移矩阵
-X_opt = lc_grad_tensor_estimator(b_total, d_list);
+num_sensors = size(b_total, 2);
+X_opt = lc_grad_tensor_estimator(b_total, d_list); % 估计局部梯度张量
 
 % 对d_list'进行QR分解
 [Q, ~] = qr(d_list');
@@ -40,24 +42,34 @@ r = rank(d_list); % 构型判据
 Q_bar = Q(:, r+1:end);
 b_bar = b_total * Q_bar; % 计算bBar
 
-[b_p, A_p] = calcFieldAndGradient(p_init, m_pos, m_hat, m_norm);
+[b_p, A_p] = calcFieldAndGradient(p_init, m_pos, m_hat, m_norm); % 基于初始位置估计计算磁场和梯度张量
 B_matrix = b_p * ones(1, num_sensors);
 B_bar = B_matrix * Q_bar;
 
-[R_init_est1] = estimateR(b_bar, B_bar, A_p, X_opt); % 一次初始化结果
-
-R_true = MatrixExp3(VecToso3(theta_true));
-norm(R_true - R_init_est1, 'fro')
-% norm(R_true - R_init_est2, 'fro')
+[R_init_est1, R_init_est2] = estimateR(b_bar, B_bar, A_p, X_opt); % 一次初始化结果
+% 把R_init_est1和R_init_est2，以及eR = norm(R_true - R_init_est1, 'fro')和eR = norm(R_true - R_init_est2, 'fro')存入R_beta_history
 
 R_beta_history = {};
-beta_vec = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+beta_vec = 0:0.1:5;
 for beta = beta_vec
-    R_beta = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init_est1, mu, beta); % using R_init
+    R_beta = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu, beta, R_true); % using R_init
     R_beta.eR = norm(R_true - R_beta.R, 'fro');
     R_beta_history{end+1} = R_beta;
     R_beta
 end
+
+% results由三部分组成：
+% 1. R_beta_history
+% 2. R_init_est1 and R_init_est2和R_true的误差等关系
+% 3. R_true
+
+R_init_est = struct('R_init_est1', R_init_est1, 'R_init_est2', R_init_est2, 'eR_init_est1', norm(R_true - R_init_est1, 'fro'), 'eR_init_est2', norm(R_true - R_init_est2, 'fro'));
+
+results.num_beta = numel(beta_vec);
+results.beta_vec = beta_vec;
+results.R_beta_history = R_beta_history;
+results.R_init_est = R_init_est;
+results.R_true = R_true;
 
 % % LM
 % [p_lm, R_lm, stats_lm] = estimate_pose_lm( ...
@@ -69,12 +81,5 @@ end
 
 % [p_Rlm, R_Rlm, stats_Rlm] = estimate_R_lm( ...
 %     b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_true, options );
-
-
-%% Stage #2: Estimate for rotation \hat{R}
-
-
-% R_est = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init_est2, params.mu, params.beta); % using R_init_est
-
 end
 
