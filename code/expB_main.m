@@ -8,7 +8,8 @@ addpath('utils')
 addpath('Functions')
 
 rng(2025);
-
+%% ========== 参数配置 ==========
+params = get_experiment_params();
 %% 参数设置
 num_points = 50; % 每个beta采样数量
 beta_list = logspace(-6, 6, 30); % beta取值范围
@@ -98,12 +99,16 @@ for beta_idx = 1:num_beta
         R_init = MatrixExp3(VecToso3(theta_init));
 
         % 所提算法，传入beta参数
-        [p_ours, R_ours, ~] = estimate_pose_ours( ...
-            b_total, d_list, m_pos, m_hat, m_norm, p_init, R_init, R_true, p_true, options, lb_p, ub_p, beta);
+        % 所提算法
+        mu = params.optimization.mu;
+        beta = params.optimization.beta;
+        alg_params = struct('R_true', R_true, 'p_true', p_true, 'mu', mu, 'beta', beta);
+        [p_ours, R_ours, stats_ours] = estimate_pose_ours( ...
+            b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p, alg_params);
 
-        % RLM算法
-        [p_rlm, R_rlm, ~] = estimate_R_lm( ...
-            b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options );
+        % Rlm
+        [p_rlm, R_rlm, stats_Rlm] = estimate_R_lm( ...
+            b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_ours, options );
 
         err_pos(beta_idx, pt_idx) = norm(p_ours - p_true);
         err_rot(beta_idx, pt_idx) = norm(R_ours - R_true, 'fro');

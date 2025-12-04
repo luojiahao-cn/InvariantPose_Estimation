@@ -36,14 +36,14 @@ params.sensor.d_list = [
 params.ground_truth.theta_true = [0; 0; 1]; % 真实旋转向量 [rad]
 params.ground_truth.p_true = [0; 0; 0]; % 传感器阵列参考点真实位置 [m]
 %% 不确定性参数
-params.uncertainty.p_uncertainty = 0.01; % 位置不确定性
+params.uncertainty.p_uncertainty = 0.03; % 位置不确定性
 params.uncertainty.r_uncertainty = 0.5;  % 旋转不确定性
 
 %% 优化算法参数
 params.optimization.options = optimoptions('lsqnonlin', ...
     'Algorithm', 'levenberg-marquardt', ...
     'Display', 'off');
-params.optimization.mu = 1;   % 所提算法的mu参数
+params.optimization.mu = 1e2;   % 所提算法的mu参数
 params.optimization.beta = 1e-3;   % 所提算法的beta参数
 
 %% 工作空间约束参数

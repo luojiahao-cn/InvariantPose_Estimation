@@ -5,7 +5,11 @@ function R_struct = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu, beta)
     LX = min(eig(X_opt)) - 1e-3;
     Abar = A_p - LA * eye(3);
     Xbar = X_opt - LX * eye(3);
+    L = 4 * norm(Abar) * norm(Xbar);
+    beta = beta * L;
+
     M = @(R) 2 * Abar * R * Xbar + mu * B_bar * b_bar';
+
     Mbar = @(R) M(R) + beta * R;
     % f = @(R) trace(R' * A_p * R * X_opt + mu * R' * B_bar * b_bar' + beta * R);
     % fbar = @(R) trace(R' * At * R * Xt + mu * R' * B_bar * b_bar' + beta * R);

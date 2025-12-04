@@ -1,0 +1,27 @@
+function [X_opt, x_opt] = lc_grad_tensor_estimator(b_total, d_list)
+    num_sensors = size(b_total, 2);
+    pairs = nchoosek(1:num_sensors, 2);
+    D_matrix = zeros(3, size(pairs,1));
+    B_matrix = zeros(3, size(pairs,1));
+
+    for idx = 1:size(pairs,1)
+        i = pairs(idx, 1);
+        j = pairs(idx, 2);
+        D_matrix(:, idx) = d_list(:, j) - d_list(:, i);
+        B_matrix(:, idx) = b_total(:, j) - b_total(:, i);
+    end
+    %% 估计局部梯度张量
+    % 构建选择矩阵S
+    S = [1,0,0,0,0; 0,1,0,0,0; 0,0,1,0,0;
+        0,1,0,0,0; 0,0,0,1,0; 0,0,0,0,1;
+        0,0,1,0,0; 0,0,0,0,1; -1,0,0,-1,0];
+
+    % 构建完整约束矩阵C
+    C_matrix = kron(D_matrix', eye(3)) * S;
+    h_vector = B_matrix(:);
+
+    % 求解最小二乘问题
+    x_opt = pinv(C_matrix) * h_vector;
+    X_opt = reshape(S * x_opt, 3, 3);  % 估计梯度（传感器坐标系）
+
+end
