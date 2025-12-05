@@ -3,7 +3,9 @@ load('../results/beta_sensitive.mat');
 
 
 tl = tiledlayout(1, 2);
-set(gcf, 'color', 'w');
+set(gcf, 'color', 'w', 'units', 'centimeters', 'position', 2*[0, 0, 8.9, 3]);
+tl.TileSpacing = 'compact';
+tl.Padding = 'compact';
 nexttile(tl, 1)
 
 num_beta = batch_results(1).results{1}.num_beta;
@@ -17,7 +19,7 @@ for i = 1:num_beta
     100, 'Marker', 'x', 'markerEdgeColor', colors(i, :), 'LineWidth', 2, 'HandleVisibility', 'off');
 end
 h = legend('$\beta = 0$', '$\beta = 10^{-2}$', '$\beta = 1$', '$\beta = 10^1$', '$\beta = 10^2$', '$\beta = 10^3$',...
-'Interpreter', 'latex', 'FontSize', 10);
+'Interpreter', 'latex', 'FontSize', 12, 'Location', 'best');
 h.ItemTokenSize = [10, 10];
 xlabel('$k$', 'Interpreter', 'latex', 'FontSize', 14);
 ylabel('$e_{\mbox{\boldmath{$R$}}}$ [-]', 'Interpreter', 'latex', 'FontSize', 14);
@@ -50,10 +52,19 @@ end
 
 % 创建eR_matrix的箱线图
 % figure;
-boxplot(eR_matrix, 'Labels', {'1', '2', '3', '4', '5', '6', '7', '8'});
-% 设置x轴标签为beta值
-xticklabels({'0', '10^{-2}', '1', '10^1', '50', '10^2', '500', '10^3'});
+boxplot(eR_matrix, 'Labels', {'1', '2', '3', '4', '5', '6', '7', '8'}, ...
+'Labels', {'$0$', '$10^{-2}$', '$1$', '$10^1$', '$50$', '$10^2$', '$500$', '$10^3$'}, 'widths', 0.2);
 % 设置boxplot的线条为黑色，内线为红色。box的T字形为实线
+
+colors = slanCM('gor', 2);
+% 获取箱子对象（外框）
+boxes = findobj(gca, 'Tag', 'Box');
+set(boxes, 'Color', colors(1, :));   % 箱体外边颜色改为绿色
+
+% 获取中位数线对象
+medians = findobj(gca, 'Tag', 'Median');
+set(medians, 'Color', colors(2, :), 'LineWidth', 1.5);  % 中位线颜色设为红色
+
 xlabel('$\beta$', 'Interpreter', 'latex', 'FontSize', 14);
 ylabel('$e_{\mbox{\boldmath{$R$}}}$ [-]', 'Interpreter', 'latex', 'FontSize', 14);
 set(gca, 'TickLabelInterpreter', 'latex', 'FontSize', 14, 'LineWidth', 1);
