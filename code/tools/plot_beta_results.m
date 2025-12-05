@@ -1,45 +1,60 @@
-function plot_beta_results(batch_results)
-    % 提取所有测试点的结果
-    num_points = length(batch_results);
-    
-    % batch_results：test_point, results
-    % results：beta_config, R_true, R_beta_history, R_init_est
-    % R_beta_history：R, k, kmax, deltabd, beta, delta_history
-    % R_init_est：R_init_est1, R_init_est2, eR_init_est1, eR_init_est2
-    % R_true：R_true
-    % test_point：p_true, theta_true
-    % R_beta_history：R, k, kmax, deltabd, beta, delta_history
-    % R_init_est：R_init_est1, R_init_est2, eR_init_est1, eR_init_est2
+clc,clear,close all
+load('../results/beta_sensitive.mat');
 
-    %% 1. 提取所有的beta和对应的eR
-    beta_vec = [];
-    eR_vec = [];
-    eR_init_vec = [];
-    for i = 1:num_points
-        for j = 1:batch_results(i).results{1}.num_beta
-            beta_vec = [beta_vec, batch_results(i).results{1}.R_beta_history{j}.beta];
-            eR_vec = [eR_vec, batch_results(i).results{1}.R_beta_history{j}.eR];
-            iter_step(j) = batch_results(i).results{1}.R_beta_history{j}.k;
-            delta_history{j} = batch_results(i).results{1}.R_beta_history{j}.delta_history;
-            eR_init_vec = [eR_init_vec, batch_results(i).results{1}.R_init_est.eR_init_est1, batch_results(i).results{1}.R_init_est.eR_init_est2];
-            eR_history{j} = batch_results(i).results{1}.R_beta_history{j}.eR_history;
-        end
-    end
-    %% 2. 绘制beta和eR的关系图
-    figure
-    plot(beta_vec, eR_vec, 'b-o', 'LineWidth', 2);
-    for j = 1:batch_results(i).results{1}.num_beta
-        plot(delta_history{j}, 'LineWidth', 2);
-        hold on;
-    end
-    % xlabel('Iteration');
-    % ylabel('delta');
-    % title('delta vs iteration');
-    % grid on;
 
-    figure
-    plot(beta_vec, iter_step, 'b-o', 'LineWidth', 2);
+tl = tiledlayout(1, 2);
+set(gcf, 'color', 'w');
+nexttile(tl, 1)
 
-    figure
-    plot(beta_vec, eR_vec, 'r-o', 'LineWidth', 2);
+num_beta = batch_results(1).results{1}.num_beta;
+colors = slanCM('gor', num_beta);
+
+for i = 1:num_beta
+    [~, deltaidx] = find(batch_results(1).results{1}.R_beta_history{i}.delta_history < 1e-5, 1, 'first');
+    semilogx(batch_results(1).results{1}.R_beta_history{i}.eR_history, 'LineWidth', 2, 'Color', colors(i, :));
+    hold on;
+    scatter(deltaidx, batch_results(1).results{1}.R_beta_history{i}.eR_history(deltaidx),...
+    100, 'Marker', 'x', 'markerEdgeColor', colors(i, :), 'LineWidth', 2, 'HandleVisibility', 'off');
 end
+h = legend('$\beta = 0$', '$\beta = 10^{-2}$', '$\beta = 1$', '$\beta = 10^1$', '$\beta = 10^2$', '$\beta = 10^3$',...
+'Interpreter', 'latex', 'FontSize', 10);
+h.ItemTokenSize = [10, 10];
+xlabel('$k$', 'Interpreter', 'latex', 'FontSize', 14);
+ylabel('$e_{\mbox{\boldmath{$R$}}}$ [-]', 'Interpreter', 'latex', 'FontSize', 14);
+grid on;
+ylim([0, 0.25])
+set(gca, 'TickLabelInterpreter', 'latex', 'FontSize', 14, 'LineWidth', 1);
+
+nexttile(tl, 2)
+% 注意：不要使用clear，会清除之前加载的数据
+load('../results/beta_robust.mat');
+
+num_beta = batch_results(1).results{1}.num_beta;
+num_points = size(batch_results, 2);
+beta_vec = batch_results(1).results{1}.beta_vec;
+
+% 将beta=0替换为1e-15以便显示
+beta_vec_display = beta_vec;
+beta_vec_display(beta_vec == 0) = 1e-15;
+
+% 为每个beta值收集eR_vec数据
+eR_matrix = zeros(num_points, num_beta); % 存储所有beta的eR_vec
+iter_step_matrix = zeros(num_points, num_beta); % 存储迭代步数
+
+for i = 1:num_beta
+    for j = 1:num_points
+        [eR_matrix(j, i), ind] = min(batch_results(j).results{1}.R_beta_history{i}.eR_history);
+        iter_step_matrix(j, i) = ind;
+    end
+end
+
+% 创建eR_matrix的箱线图
+% figure;
+boxplot(eR_matrix, 'Labels', {'1', '2', '3', '4', '5', '6', '7', '8'});
+% 设置x轴标签为beta值
+xticklabels({'0', '10^{-2}', '1', '10^1', '50', '10^2', '500', '10^3'});
+% 设置boxplot的线条为黑色，内线为红色。box的T字形为实线
+xlabel('$\beta$', 'Interpreter', 'latex', 'FontSize', 14);
+ylabel('$e_{\mbox{\boldmath{$R$}}}$ [-]', 'Interpreter', 'latex', 'FontSize', 14);
+set(gca, 'TickLabelInterpreter', 'latex', 'FontSize', 14, 'LineWidth', 1);
+grid on;

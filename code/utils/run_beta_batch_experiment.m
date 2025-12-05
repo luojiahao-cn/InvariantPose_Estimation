@@ -40,7 +40,12 @@ for point_idx = 1:num_test_points
     % 初始化结果元胞数组
     results = cell(num_trials_per_point, 1);
     
+    unc = linspace(0.02, 0.1, num_trials_per_point);
     for trial_idx = 1:num_trials_per_point
+        % params_current.experiment.p_uncertainty = unc(trial_idx); % 位置不确定度
+        params_current.experiment.p_uncertainty = 0;
+        % params_current.experiment.r_uncertainty = unc(trial_idx);  % 旋转不确定度
+        params_current.experiment.r_uncertainty = 0.1;
         exp_idx = (point_idx - 1) * num_trials_per_point + trial_idx;
         results{trial_idx} = run_beta_experiment(exp_idx, ...
             num_test_points * num_trials_per_point, params_current, ...

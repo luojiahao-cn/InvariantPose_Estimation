@@ -22,6 +22,12 @@ workspace_radius = params.workspace.radius - 0.01;
 test_points = struct('p_true', {}, 'theta_true', {});
 
 switch method
+    case 'fixed'
+        % 将位姿选用params中的ground_truth
+        for i = 1:num_points
+            test_points(i).p_true = params.ground_truth.p_true;
+            test_points(i).theta_true = params.ground_truth.theta_true;
+        end
     case 'random'
         % 在工作空间内随机生成位置和旋转
         i = 1;

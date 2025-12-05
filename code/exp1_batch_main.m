@@ -2,7 +2,7 @@
 clc; clear; close all;
 addpath('./utils')
 addpath('./Functions')
-
+addpath('./tools')
 %% ========== 参数配置 ==========
 params = get_experiment_params();
 
@@ -35,4 +35,3 @@ plot_batch_results(batch_results);
 % save('results/exp1_batch_results.mat', 'batch_results', 'test_points', 'params');
 
 % fprintf('\n结果已保存到 results/exp1_batch_results.mat\n');
-

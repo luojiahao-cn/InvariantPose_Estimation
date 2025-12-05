@@ -46,11 +46,11 @@ b_bar = b_total * Q_bar; % 计算bBar
 B_matrix = b_p * ones(1, num_sensors);
 B_bar = B_matrix * Q_bar;
 
-[R_init_est1, R_init_est2] = estimateR(b_bar, B_bar, A_p, X_opt); % 一次初始化结果
-% 把R_init_est1和R_init_est2，以及eR = norm(R_true - R_init_est1, 'fro')和eR = norm(R_true - R_init_est2, 'fro')存入R_beta_history
+R_init_est = estimateR(b_bar, B_bar, A_p, X_opt); % 一次初始化结果
 
 R_beta_history = {};
-beta_vec = 0:0.1:5;
+% beta_vec = [0, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6];
+beta_vec = [0, 1e-2, 1, 1e1, 5e1, 1e2, 5e2, 1e3];
 for beta = beta_vec
     R_beta = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu, beta, R_true); % using R_init
     R_beta.eR = norm(R_true - R_beta.R, 'fro');
@@ -63,7 +63,7 @@ end
 % 2. R_init_est1 and R_init_est2和R_true的误差等关系
 % 3. R_true
 
-R_init_est = struct('R_init_est1', R_init_est1, 'R_init_est2', R_init_est2, 'eR_init_est1', norm(R_true - R_init_est1, 'fro'), 'eR_init_est2', norm(R_true - R_init_est2, 'fro'));
+R_init_est = struct('R_init_est', R_init_est, 'eR_init_est', norm(R_true - R_init_est, 'fro'));
 
 results.num_beta = numel(beta_vec);
 results.beta_vec = beta_vec;
