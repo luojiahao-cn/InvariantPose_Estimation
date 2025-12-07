@@ -50,24 +50,34 @@ R_init_est = estimateR(b_bar, B_bar, A_p, X_opt); % 一次初始化结果
 
 R_beta_history = {};
 % beta_vec = [0, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6];
-beta_vec = [0, 1e-2, 1, 1e1, 5e1, 1e2, 5e2, 1e3];
-for beta = beta_vec
-    R_beta = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu, beta, R_true); % using R_init
-    R_beta.eR = norm(R_true - R_beta.R, 'fro');
-    R_beta_history{end+1} = R_beta;
-    R_beta
-end
+% beta_vec = [0, 1e-2, 1, 1e1, 5e1, 1e2, 5e2, 1e3];
+% for beta = beta_vec
+%     R_beta = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu, beta, R_true); % using R_init
+%     R_beta.eR = norm(R_true - R_beta.R, 'fro');
+%     R_beta_history{end+1} = R_beta;
+%     R_beta
+% end
 
-% results由三部分组成：
-% 1. R_beta_history
-% 2. R_init_est1 and R_init_est2和R_true的误差等关系
-% 3. R_true
+R_mu_history = {};
+mu_vec = [0, 1e-3, 1e-2, 1e-1, 1, 1e1, 1e2, 1e3];
+for mu = mu_vec
+    R_mu = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu, 0, R_true); % using R_init
+    R_mu.eR = norm(R_true - R_mu.R, 'fro');
+    R_mu_history{end+1} = R_mu;
+    R_mu
+end
 
 R_init_est = struct('R_init_est', R_init_est, 'eR_init_est', norm(R_true - R_init_est, 'fro'));
 
-results.num_beta = numel(beta_vec);
-results.beta_vec = beta_vec;
-results.R_beta_history = R_beta_history;
+% results.num_beta = numel(beta_vec);
+% results.beta_vec = beta_vec;
+% results.R_beta_history = R_beta_history;
+% results.R_init_est = R_init_est;
+% results.R_true = R_true;
+
+results.num_mu = numel(mu_vec);
+results.mu_vec = mu_vec;
+results.R_mu_history = R_mu_history;
 results.R_init_est = R_init_est;
 results.R_true = R_true;
 

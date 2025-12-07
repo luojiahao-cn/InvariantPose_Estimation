@@ -8,7 +8,7 @@ function R_struct = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu, beta, R
 
     L = 4 * norm(Abar) * norm(Xbar);
     % beta = beta * L;
-    mu = L;
+    mu = mu * L;
     beta = beta * L / mu;
 
     M = @(R) 2 * Abar * R * Xbar + mu * B_bar * b_bar';
