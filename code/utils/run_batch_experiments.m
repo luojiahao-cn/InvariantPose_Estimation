@@ -19,9 +19,6 @@ fprintf('每个测试点实验次数: %d\n', num_trials_per_point);
 fprintf('总实验次数: %d\n\n', num_test_points * num_trials_per_point);
 
 % 提取常用参数
-m_pos = params.magnet.m_pos;
-m_hat = params.magnet.m_hat;
-m_norm = params.magnet.m_norm;
 d_list = params.sensor.d_list;
 workspace_center = params.workspace.center;
 workspace_radius = params.workspace.radius;
