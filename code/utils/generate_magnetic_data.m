@@ -23,7 +23,6 @@ R_true = MatrixExp3(VecToso3(theta_true));
 sensor_positions = p_true + R_true * d_list;
 
 num_sensors = size(d_list, 2);
-num_magnets = size(m_pos, 2);
 
 % 初始化磁场存储
 B_total = zeros(3, num_sensors);        % 全局坐标系磁场
@@ -34,24 +33,8 @@ gradb_total = zeros(3, 3, num_sensors); % 局部坐标系梯度
 % 计算每个传感器的磁场和梯度
 for sensor_idx = 1:num_sensors
     % 临时存储全局坐标系下的总和
-    B_t = zeros(3, 1);
-    gradB_t = zeros(3, 3);
 
-    for magnet_idx = 1:num_magnets
-        % 计算相对位置（全局坐标系）
-        r = sensor_positions(:, sensor_idx) - m_pos(:, magnet_idx);
-
-        % 获取当前磁铁参数
-        moment_unit = m_hat(:, magnet_idx);
-        moment_mag = m_norm(magnet_idx);
-
-        % 计算磁场和梯度（全局坐标系）
-        [B_single, gradB_single] = dipole_b_and_gradb(r, moment_unit, moment_mag);
-
-        % 累加全局磁场和梯度
-        B_t = B_t + B_single;
-        gradB_t = gradB_t + gradB_single;
-    end
+    [B_t, gradB_t] = calcFieldAndGradient(sensor_positions(:, sensor_idx), m_pos, m_hat, m_norm);
 
     % 存储全局坐标系结果
     B_total(:, sensor_idx) = B_t;
@@ -61,6 +44,5 @@ for sensor_idx = 1:num_sensors
     b_total(:, sensor_idx) = R_true' * B_t;
     gradb_total(:, :, sensor_idx) = R_true' * gradB_t * R_true;
 end
-
 end
 

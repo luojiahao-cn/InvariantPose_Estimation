@@ -8,4 +8,4 @@ function [b_p, A_p] = calcFieldAndGradient(p, m_pos, m_hat, m_norm)
         b_p = b_p + B;
         A_p = A_p + gradB;
     end
-    end
+end

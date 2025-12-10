@@ -1,5 +1,6 @@
 clc,clear,close all
-load('../../results/beta_sensitive.mat');
+addpath('../results/')
+load('beta_sensitive.mat');
 
 tl = tiledlayout(1, 2);
 set(gcf, 'color', 'w', 'units', 'centimeters', 'position', 2.3*[0, 0, 8.9, 8.9/2/1.26]);
@@ -13,9 +14,9 @@ colors = slanCM('gor', num_beta);
 for i = 1:num_beta
     [~, deltaidx] = find(batch_results(1).results{1}.R_beta_history{i}.delta_history < 1e-5, 1, 'first');
     
-    semilogx(batch_results(1).results{1}.R_beta_history{i}.eR_history, 'LineWidth', 2, 'Color', colors(i, :));
+    semilogx(2*asin(batch_results(1).results{1}.R_beta_history{i}.eR_history/(2*sqrt(2))), 'LineWidth', 2, 'Color', colors(i, :));
     hold on;
-    scatter(deltaidx, batch_results(1).results{1}.R_beta_history{i}.eR_history(deltaidx),...
+    scatter(deltaidx, 2*asin(batch_results(1).results{1}.R_beta_history{i}.eR_history(deltaidx)/(2*sqrt(2))),...
     100, 'Marker', 'x', 'markerEdgeColor', colors(i, :), 'LineWidth', 2, 'HandleVisibility', 'off');
 end
 h = legend('$\kappa = 0$', '$\kappa = 10^{-2}$', '$\kappa = 1$', '$\kappa = 10^1$', '$\kappa = 10^2$', '$\kappa = 10^3$',...
@@ -23,14 +24,14 @@ h = legend('$\kappa = 0$', '$\kappa = 10^{-2}$', '$\kappa = 1$', '$\kappa = 10^1
 h.ItemTokenSize = [10, 10];
 h.Color = [1, 1, 1];
 xlabel('$k$', 'Interpreter', 'latex', 'FontSize', 14);
-ylabel('$e_{\mbox{\boldmath{$R$}}}$ [-]', 'Interpreter', 'latex', 'FontSize', 14);
+ylabel('$e_{\mbox{\boldmath{$R$}}}$ [rad]', 'Interpreter', 'latex', 'FontSize', 14);
 grid on;
-ylim([0, 0.25]);yticks(0:0.1:0.2);
+ylim([0, 0.18]);yticks(0:0.05:0.15);
 set(gca, 'TickLabelInterpreter', 'latex', 'FontSize', 14, 'LineWidth', 1);
 
 nexttile(tl, 2)
 % 注意：不要使用clear，会清除之前加载的数据
-load('../../results/beta_robust_3.mat');
+load('beta_robust_2.mat');
 
 num_beta = batch_results(1).results{1}.num_beta;
 num_points = size(batch_results, 2);
@@ -43,6 +44,7 @@ iter_step_matrix = zeros(num_points, num_beta); % 存储迭代步数
 for i = 1:num_beta
     for j = 1:num_points
         [eR_matrix(j, i), ind] = min(batch_results(j).results{1}.R_beta_history{i}.eR_history);
+        eR_matrix(j, i) = 2*asin(eR_matrix(j, i)/(2*sqrt(2)));
         iter_step_matrix(j, i) = ind;
     end
 end
@@ -64,9 +66,10 @@ medians = findobj(gca, 'Tag', 'Median');
 set(medians, 'Color', colors(2, :), 'LineWidth', 1.5);  % 中位线颜色设为红色
 
 xlabel('$\kappa$', 'Interpreter', 'latex', 'FontSize', 14);
-ylabel('$e_{\mbox{\boldmath{$R$}}}$ [-]', 'Interpreter', 'latex', 'FontSize', 14);
+ylabel('$e_{\mbox{\boldmath{$R$}}}$ [rad]', 'Interpreter', 'latex', 'FontSize', 14);
+yticks(0:0.01:0.03);
 set(gca, 'TickLabelInterpreter', 'latex', 'FontSize', 14, 'LineWidth', 1);
 grid on;
 
 %% 
-% export_fig('../figures/beta_results.png', '-png', '-r600');
+export_fig('../figures/beta_results.png', '-png', '-r600');

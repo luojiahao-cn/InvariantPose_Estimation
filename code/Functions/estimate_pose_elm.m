@@ -36,11 +36,6 @@ for idx = 1:num_pairs
     delta_d(:, idx) = d_list(:, j) - d_list(:, i);
 end
 
-% 设置优化选项
-% options = optimoptions('lsqnonlin', ...
-%     'Algorithm', 'levenberg-marquardt', ...
-%     'Display', 'off');
-
 % 组合初始变量（旋转向量和位置）
 x0 = [theta_init; p_init];
 lb = [-inf(3,1); lb_p(:)];

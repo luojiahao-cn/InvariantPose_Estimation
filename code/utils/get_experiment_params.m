@@ -12,12 +12,12 @@ function params = get_experiment_params()
 
 %% 默认磁铁参数
 params.magnet.m_pos = [
-    [-0.1125;0.0002;0.3099], ...
-    [0.1125;0.0002;0.3099]
+    [-0.15;0;0.45], ...
+    [0.15;0;0.45]
     ];
 params.magnet.m_hat = [
-    [-0.2588;0;0.9659], ...
-    [0.2588;0;0.9659]
+    [sin(1/12*pi);0;cos(1/12*pi)], ...
+    [-sin(1/12*pi);0;cos(1/12*pi)] % 1/12*pi
     ];
 params.magnet.m_hat = params.magnet.m_hat ./ vecnorm(params.magnet.m_hat);
 params.magnet.m_norm = [300, 300];
@@ -44,7 +44,7 @@ params.optimization.options = optimoptions('lsqnonlin', ...
     'Algorithm', 'levenberg-marquardt', ...
     'Display', 'off', ...
     'MaxFunctionEvaluations', 600, ... % default: 200 * number of variables
-    'MaxIterations', 200, ... % default: 400
+    'MaxIterations', 400, ... % default: 400
     'OptimalityTolerance', 1e-6); % default: 1e-6
 
 params.optimization.mu = 1;   % 所提算法的mu参数

@@ -23,6 +23,7 @@ d_list = params.sensor.d_list;
 workspace_center = params.workspace.center;
 workspace_radius = params.workspace.radius;
 lb_p = workspace_center - workspace_radius;
+lb_p(3) = 0;
 ub_p = workspace_center + workspace_radius;
 
 % 遍历每个测试点
@@ -49,11 +50,13 @@ for point_idx = 1:num_test_points
     % 预先初始化结果结构体数组，确保字段一致
     results = struct('p_lm', [], 'R_lm', [], 'p_elm', [], 'R_elm', [],...
      'p_ours', [], 'R_ours', [], 'p_Rlm', [], 'R_Rlm', [],...
-     'R_ours_init_est1', [], 'R_ours_init_est2', [],...
-      'p_init', [], 'theta_init', [], 'lm_pos_error', [], 'lm_rot_error', [],...
-       'elm_pos_error', [], 'elm_rot_error', [], 'ours_pos_error', [], 'ours_rot_error',...
-        [], 'Rlm_pos_error', [], 'Rlm_rot_error', [],...
-         'ours_rot_error_init_est1', [], 'ours_rot_error_init_est2', []);
+      'lm_pos_error', [], 'lm_rot_error', [],...
+       'elm_pos_error', [], 'elm_rot_error', [], ... 
+       'ours_pos_error', [], 'ours_rot_error', [],...
+        'Rlm_pos_error', [], 'Rlm_rot_error', [],...
+        'p_init', [], 'theta_init', [],...
+        'p_fischer', [], 'R_fischer', [], 'fischer_pos_error', [], 'fischer_rot_error', [],...
+        'time_lm', [], 'time_elm', [], 'time_ours', [], 'time_fischer', [], 'time_Rlm', []);
     
     for trial_idx = 1:num_trials_per_point
         exp_idx = (point_idx - 1) * num_trials_per_point + trial_idx;
@@ -61,10 +64,10 @@ for point_idx = 1:num_test_points
             num_test_points * num_trials_per_point, params_current, ...
             b_total, d_list, test_points(point_idx).p_true, R_true, lb_p, ub_p);
     end
-    
-    % 计算统计摘要
+
+    % 沿着num_trials_per_point计算平均
     summary = calculate_point_summary(results);
-    
+        
     % 存储结果
     batch_results(point_idx).test_point = test_points(point_idx);
     batch_results(point_idx).results = results;
@@ -76,65 +79,74 @@ fprintf('\n========== 批量实验完成 ==========\n');
 end
 
 function summary = calculate_point_summary(results)
-% 计算单个测试点的统计摘要
-num_trials = length(results);
+    % 计算单个测试点的统计摘要
+    % 提取所有误差
+    lm_pos_errors = [results.lm_pos_error];
+    lm_rot_errors = [results.lm_rot_error];
+    elm_pos_errors = [results.elm_pos_error];
+    elm_rot_errors = [results.elm_rot_error];
+    ours_pos_errors = [results.ours_pos_error];
+    ours_rot_errors = [results.ours_rot_error];
+    fischer_pos_errors = [results.fischer_pos_error];
+    fischer_rot_errors = [results.fischer_rot_error];
+    Rlm_pos_errors = [results.Rlm_pos_error];
+    Rlm_rot_errors = [results.Rlm_rot_error];
+    time_lm = [results.time_lm];
+    time_elm = [results.time_elm];
+    time_ours = [results.time_ours];
+    time_fischer = [results.time_fischer];
+    time_Rlm = [results.time_Rlm];
 
-% 提取所有误差
-lm_pos_errors = [results.lm_pos_error];
-lm_rot_errors = [results.lm_rot_error];
-elm_pos_errors = [results.elm_pos_error];
-elm_rot_errors = [results.elm_rot_error];
-ours_pos_errors = [results.ours_pos_error];
-ours_rot_errors = [results.ours_rot_error];
-Rlm_pos_errors = [results.Rlm_pos_error];
-Rlm_rot_errors = [results.Rlm_rot_error];
-ours_rot_errors_init_est1 = [results.ours_rot_error_init_est1];
-ours_rot_errors_init_est2 = [results.ours_rot_error_init_est2];
+    % 计算统计量
+    summary.lm.pos_mean = mean(lm_pos_errors);
+    summary.lm.pos_std = std(lm_pos_errors);
+    summary.lm.pos_max = max(lm_pos_errors);
+    summary.lm.rot_mean = mean(lm_rot_errors);
+    summary.lm.rot_std = std(lm_rot_errors);
+    summary.lm.rot_max = max(lm_rot_errors);
+    summary.lm.time_mean = mean(time_lm);
+    summary.lm.time_std = std(time_lm);
+    summary.lm.time_max = max(time_lm);
 
-% 计算统计量
-summary.lm.pos_mean = mean(lm_pos_errors);
-summary.lm.pos_std = std(lm_pos_errors);
-summary.lm.pos_max = max(lm_pos_errors);
-summary.lm.rot_mean = mean(lm_rot_errors);
-summary.lm.rot_std = std(lm_rot_errors);
-summary.lm.rot_max = max(lm_rot_errors);
+    summary.elm.pos_mean = mean(elm_pos_errors);
+    summary.elm.pos_std = std(elm_pos_errors);
+    summary.elm.pos_max = max(elm_pos_errors);
+    summary.elm.rot_mean = mean(elm_rot_errors);
+    summary.elm.rot_std = std(elm_rot_errors);
+    summary.elm.rot_max = max(elm_rot_errors);
+    summary.elm.time_mean = mean(time_elm);
+    summary.elm.time_std = std(time_elm);
+    summary.elm.time_max = max(time_elm);
 
-summary.elm.pos_mean = mean(elm_pos_errors);
-summary.elm.pos_std = std(elm_pos_errors);
-summary.elm.pos_max = max(elm_pos_errors);
-summary.elm.rot_mean = mean(elm_rot_errors);
-summary.elm.rot_std = std(elm_rot_errors);
-summary.elm.rot_max = max(elm_rot_errors);
+    summary.ours.pos_mean = mean(ours_pos_errors);
+    summary.ours.pos_std = std(ours_pos_errors);
+    summary.ours.pos_max = max(ours_pos_errors);
+    summary.ours.rot_mean = mean(ours_rot_errors);
+    summary.ours.rot_std = std(ours_rot_errors);
+    summary.ours.rot_max = max(ours_rot_errors);
+    summary.ours.time_mean = mean(time_ours);
+    summary.ours.time_std = std(time_ours);
+    summary.ours.time_max = max(time_ours);
 
-summary.ours.pos_mean = mean(ours_pos_errors);
-summary.ours.pos_std = std(ours_pos_errors);
-summary.ours.pos_max = max(ours_pos_errors);
-summary.ours.rot_mean = mean(ours_rot_errors);
-summary.ours.rot_std = std(ours_rot_errors);
-summary.ours.rot_max = max(ours_rot_errors);
+    summary.fischer.pos_mean = mean(fischer_pos_errors);
+    summary.fischer.pos_std = std(fischer_pos_errors);
+    summary.fischer.pos_max = max(fischer_pos_errors);
+    summary.fischer.rot_mean = mean(fischer_rot_errors);
+    summary.fischer.rot_std = std(fischer_rot_errors);
+    summary.fischer.rot_max = max(fischer_rot_errors);
+    summary.fischer.time_mean = mean(time_fischer);
+    summary.fischer.time_std = std(time_fischer);
+    summary.fischer.time_max = max(time_fischer);
 
-% eigenmethod和svdmethod都采用ours的pos的平均值、标准差和最大值，但是采用自己的rot_error_init_est1和rot_error_init_est2
-
-summary.eigenmethod.pos_mean = mean(ours_pos_errors);
-summary.eigenmethod.pos_std = std(ours_pos_errors);
-summary.eigenmethod.pos_max = max(ours_pos_errors);
-summary.eigenmethod.rot_mean = mean(ours_rot_errors_init_est1);
-summary.eigenmethod.rot_std = std(ours_rot_errors_init_est1);
-summary.eigenmethod.rot_max = max(ours_rot_errors_init_est1);
-
-summary.svdmethod.pos_mean = mean(ours_pos_errors);
-summary.svdmethod.pos_std = std(ours_pos_errors);
-summary.svdmethod.pos_max = max(ours_pos_errors);
-summary.svdmethod.rot_mean = mean(ours_rot_errors_init_est2);
-summary.svdmethod.rot_std = std(ours_rot_errors_init_est2);
-summary.svdmethod.rot_max = max(ours_rot_errors_init_est2);
-
-summary.Rlm.pos_mean = mean(Rlm_pos_errors);
-summary.Rlm.pos_std = std(Rlm_pos_errors);
-summary.Rlm.pos_max = max(Rlm_pos_errors);
-summary.Rlm.rot_mean = mean(Rlm_rot_errors);
-summary.Rlm.rot_std = std(Rlm_rot_errors);
-summary.Rlm.rot_max = max(Rlm_rot_errors);
+    summary.Rlm.pos_mean = mean(Rlm_pos_errors);
+    summary.Rlm.pos_std = std(Rlm_pos_errors);
+    summary.Rlm.pos_max = max(Rlm_pos_errors);
+    summary.Rlm.rot_mean = mean(Rlm_rot_errors);
+    summary.Rlm.rot_std = std(Rlm_rot_errors);
+    summary.Rlm.rot_max = max(Rlm_rot_errors);
+    summary.Rlm.time_mean = mean(time_Rlm);
+    summary.Rlm.time_std = std(time_Rlm);
+    summary.Rlm.time_max = max(time_Rlm);
 
 end
 

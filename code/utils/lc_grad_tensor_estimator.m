@@ -18,6 +18,12 @@ function [X_opt, x_opt] = lc_grad_tensor_estimator(b_total, d_list)
 
     % 构建完整约束矩阵C
     C_matrix = kron(D_matrix', eye(3)) * S;
+
+    if rank(C_matrix) < 5
+        warning('lc_grad_tensor_estimator:rankDeficient', ...
+            'Gradient system matrix C is rank deficient. Sensor geometry may be ill conditioned.');
+    end
+
     h_vector = B_matrix(:);
 
     % 求解最小二乘问题
