@@ -65,20 +65,15 @@ B_matrix = b_p * ones(1, num_sensors);
 B_bar = B_matrix * Q_bar;
 [R_init_est1, R_init_est2] = estimateR(b_bar, B_bar, A_p, X_opt);
 
-L = norm(A_p)*norm(X_opt)/(norm(B_bar)*norm(b_bar));
-% L = 1000;
-% L = norm(A_p)*norm(X_opt);
-% mu = L; %L; % regularization parameter
-% mu = 1e3;
-% beta = 1e-3;
-% 使用外部beta变量
-
-R_est = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, params.mu, params.beta); % using R_init
-% R_est = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init_est2, params.mu, params.beta); % using R_init_est
+mu = 1e2;
+beta = 1e1;
+R_PPI = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init_est1, mu, beta, params.R_true); % using R_init
 stats.X_opt = X_opt;         % 估计的梯度矩阵
-stats.R_iter_history = R_est.R_iter_history; % 每次迭代的R
-stats.delta_history = R_est.delta_history;   % 每次迭代的delta
-R_est = R_est.R; % 返回最终R
+stats.R_iter_history = R_PPI.R_iter_history; % 每次迭代的R
+stats.delta_history = R_PPI.delta_history;   % 每次迭代的delta
+R_est.PPI = R_PPI.R; % 返回最终R
+R_est.R_init_est1 = R_init_est1;
+R_est.R_init_est2 = R_init_est2;
 end
 
 %% ----------------------------Functions-------------------------------  %%

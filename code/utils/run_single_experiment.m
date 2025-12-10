@@ -28,9 +28,22 @@ mu = params.optimization.mu;
 beta = params.optimization.beta;
 
 % ==== 初始值猜测 ====
-init_error = -1 + 2 * rand(3,1); % [-1, 1]
-p_init = p_true + p_uncertainty * init_error;
-theta_init = theta_true + r_uncertainty * init_error;
+
+% 初始化p_init为在以p_true为球心，半径为p_uncertainty，p_init(3)>=0的球内随机采样
+% 球面内均匀采样，生成半径为 <= p_uncertainty 的向量
+u = randn(3,1);       % 随机方向
+u(3) = abs(u(3));
+u = u / norm(u);      % 单位向量
+r = (rand())^(1/3) * p_uncertainty;  % 半径分布
+p_init = p_true + r * u;
+
+% theta_init = theta_true + r_uncertainty * init_error;
+% theta_init的随机初始化，基于真实theta_true和r_uncertainty，采用旋转向量扰动
+u_theta = randn(3,1);
+u_theta = u_theta / norm(u_theta);
+r_theta = (rand())^(1/3) * r_uncertainty;
+theta_init = theta_true + r_theta * u_theta;
+% 这里的theta_init为旋转向量（轴角），后续调用算法时将通过MatrixExp3(VecToso3(theta_init))转成旋转矩阵
 
 % ==== 算法调用 ====
 % LM
@@ -56,30 +69,32 @@ result.R_lm    = R_lm;
 result.p_elm   = p_elm;
 result.R_elm   = R_elm;
 result.p_ours  = p_ours;
-result.R_ours  = R_ours;
+result.R_ours  = R_ours.PPI;
+result.R_ours_init_est1 = R_ours.R_init_est1;
+result.R_ours_init_est2 = R_ours.R_init_est2;
 result.p_Rlm   = p_Rlm;
 result.R_Rlm   = R_Rlm;
+result.p_init  = p_init;
+result.theta_init = theta_init;
 
 % ==== 误差分析 ====
 % LM
 result.lm_pos_error = norm(p_lm - p_true);
 result.lm_rot_error = norm(R_lm - R_true, 'fro');
-result.lm_field_error = calculate_field_errors(p_lm, R_lm, b_total, d_list, m_pos, m_hat, m_norm);
 
 % ELM
 result.elm_pos_error = norm(p_elm - p_true);
 result.elm_rot_error = norm(R_elm - R_true, 'fro');
-result.elm_field_error = calculate_field_errors(p_elm, R_elm, b_total, d_list, m_pos, m_hat, m_norm);
 
 % 所提算法
 result.ours_pos_error = norm(p_ours - p_true);
-result.ours_rot_error = norm(R_ours - R_true, 'fro');
-result.ours_field_error = calculate_field_errors(p_ours, R_ours, b_total, d_list, m_pos, m_hat, m_norm);
+result.ours_rot_error = norm(R_ours.PPI - R_true, 'fro');
+result.ours_rot_error_init_est1 = norm(R_ours.R_init_est1 - R_true, 'fro');
+result.ours_rot_error_init_est2 = norm(R_ours.R_init_est2 - R_true, 'fro');
 
 % Rlm
 result.Rlm_pos_error = norm(p_Rlm - p_true);
 result.Rlm_rot_error = norm(R_Rlm - R_true, 'fro');
-result.Rlm_field_error = calculate_field_errors(p_Rlm, R_Rlm, b_total, d_list, m_pos, m_hat, m_norm);
 
 end
 

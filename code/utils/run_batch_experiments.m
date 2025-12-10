@@ -19,9 +19,6 @@ fprintf('每个测试点实验次数: %d\n', num_trials_per_point);
 fprintf('总实验次数: %d\n\n', num_test_points * num_trials_per_point);
 
 % 提取常用参数
-m_pos = params.magnet.m_pos;
-m_hat = params.magnet.m_hat;
-m_norm = params.magnet.m_norm;
 d_list = params.sensor.d_list;
 workspace_center = params.workspace.center;
 workspace_radius = params.workspace.radius;
@@ -43,21 +40,20 @@ for point_idx = 1:num_test_points
     
     % 为当前测试点生成磁场数据
     [b_total, ~, ~, ~, ~] = generate_magnetic_data(params_current);
+    % b_total = b_total + 1e-4 * randn(size(b_total)); % add noise to the magnetic field data
     
     % 计算真实旋转矩阵
     R_true = MatrixExp3(VecToso3(test_points(point_idx).theta_true));
     
     % 对该测试点执行多次实验
     % 预先初始化结果结构体数组，确保字段一致
-    results(num_trials_per_point) = struct(...
-        'p_lm', [], 'R_lm', [], ...
-        'p_elm', [], 'R_elm', [], ...
-        'p_ours', [], 'R_ours', [], ...
-        'p_Rlm', [], 'R_Rlm', [], ...
-        'lm_pos_error', [], 'lm_rot_error', [], 'lm_field_error', [], ...
-        'elm_pos_error', [], 'elm_rot_error', [], 'elm_field_error', [], ...
-        'ours_pos_error', [], 'ours_rot_error', [], 'ours_field_error', [], ...
-        'Rlm_pos_error', [], 'Rlm_rot_error', [], 'Rlm_field_error', []);
+    results = struct('p_lm', [], 'R_lm', [], 'p_elm', [], 'R_elm', [],...
+     'p_ours', [], 'R_ours', [], 'p_Rlm', [], 'R_Rlm', [],...
+     'R_ours_init_est1', [], 'R_ours_init_est2', [],...
+      'p_init', [], 'theta_init', [], 'lm_pos_error', [], 'lm_rot_error', [],...
+       'elm_pos_error', [], 'elm_rot_error', [], 'ours_pos_error', [], 'ours_rot_error',...
+        [], 'Rlm_pos_error', [], 'Rlm_rot_error', [],...
+         'ours_rot_error_init_est1', [], 'ours_rot_error_init_est2', []);
     
     for trial_idx = 1:num_trials_per_point
         exp_idx = (point_idx - 1) * num_trials_per_point + trial_idx;
@@ -92,6 +88,8 @@ ours_pos_errors = [results.ours_pos_error];
 ours_rot_errors = [results.ours_rot_error];
 Rlm_pos_errors = [results.Rlm_pos_error];
 Rlm_rot_errors = [results.Rlm_rot_error];
+ours_rot_errors_init_est1 = [results.ours_rot_error_init_est1];
+ours_rot_errors_init_est2 = [results.ours_rot_error_init_est2];
 
 % 计算统计量
 summary.lm.pos_mean = mean(lm_pos_errors);
@@ -114,6 +112,22 @@ summary.ours.pos_max = max(ours_pos_errors);
 summary.ours.rot_mean = mean(ours_rot_errors);
 summary.ours.rot_std = std(ours_rot_errors);
 summary.ours.rot_max = max(ours_rot_errors);
+
+% eigenmethod和svdmethod都采用ours的pos的平均值、标准差和最大值，但是采用自己的rot_error_init_est1和rot_error_init_est2
+
+summary.eigenmethod.pos_mean = mean(ours_pos_errors);
+summary.eigenmethod.pos_std = std(ours_pos_errors);
+summary.eigenmethod.pos_max = max(ours_pos_errors);
+summary.eigenmethod.rot_mean = mean(ours_rot_errors_init_est1);
+summary.eigenmethod.rot_std = std(ours_rot_errors_init_est1);
+summary.eigenmethod.rot_max = max(ours_rot_errors_init_est1);
+
+summary.svdmethod.pos_mean = mean(ours_pos_errors);
+summary.svdmethod.pos_std = std(ours_pos_errors);
+summary.svdmethod.pos_max = max(ours_pos_errors);
+summary.svdmethod.rot_mean = mean(ours_rot_errors_init_est2);
+summary.svdmethod.rot_std = std(ours_rot_errors_init_est2);
+summary.svdmethod.rot_max = max(ours_rot_errors_init_est2);
 
 summary.Rlm.pos_mean = mean(Rlm_pos_errors);
 summary.Rlm.pos_std = std(Rlm_pos_errors);

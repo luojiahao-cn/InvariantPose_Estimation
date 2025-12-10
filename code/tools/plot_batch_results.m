@@ -11,14 +11,19 @@ num_methods = 4;  % LM, ELM, Ours, Rlm
 % 提取所有测试点的坐标
 all_coords = [batch_results.test_point];
 all_p_true = [all_coords.p_true];  % 3×num_points 矩阵
+% all_p_init = [all_coords.p_init];
+% 提取所有batch_results(N).results.p_init
+all_p_init = [];
+for i = 1:num_points
+    all_p_init = [all_p_init, batch_results(i).results.p_init];
+end
 
 % 提取所有测试点的误差（使用summary中的均值）
-error_matrix = zeros(num_points, num_methods);  % 行：测试点，列：方法
 pos_error_matrix = zeros(num_points, num_methods);
 rot_error_matrix = zeros(num_points, num_methods);
 
-method_names = {'ours', 'Rlm', 'lm', 'elm'};
-method_labels = {'Ours', 'Rlm', 'LM', 'ELM'};
+method_names = {'ours', 'lm', 'elm', 'eigenmethod'};
+method_labels = {'Ours', 'LM', 'ELM', 'Eigenmethod'};
 
 for i = 1:num_points
     for j = 1:num_methods
@@ -33,6 +38,7 @@ end
 error_matrix = pos_error_matrix + rot_error_matrix;
 
 % 归一化综合误差到[0,1]用于颜色映射（全局归一化）
+error_matrix(error_matrix > 0.2) = 0.2;
 err_max_all = max(error_matrix(:));
 err_min_all = min(error_matrix(:));
 if err_max_all > err_min_all
@@ -48,7 +54,7 @@ custom_colormap = slanCM('gor', n_colors);
 % 创建图形
 figure('Color', 'white', 'units', 'centimeters', 'Position', [0, 0, 28, 13]);
 
-t = tiledlayout(4, 4, 'TileSpacing', 'compact');
+t = tiledlayout(4, num_methods, 'TileSpacing', 'compact');
 
 % x-y 平面 scatter，占据前两行, 每个方法合并两行（2行1列）
 for j = 1:num_methods
@@ -66,7 +72,8 @@ for j = 1:num_methods
     end
     
     % 绘制散点图
-    scatter(all_p_true(1, :), all_p_true(2, :), 50, colors, 'filled');
+    % scatter(all_p_true(1, :), all_p_true(2, :), 50, colors, 'filled');
+    scatter(all_p_init(1, :), all_p_init(2, :), 50, colors, 'filled');
     
     xlabel('$x$ [mm]', 'FontSize', fontsize, 'Interpreter', 'latex');
     if j == 1
@@ -101,7 +108,8 @@ for j = 1:num_methods
     end
     
     % 绘制散点图
-    scatter(all_p_true(1, :), all_p_true(3, :), 50, colors, 'filled');
+    % scatter(all_p_true(1, :), all_p_true(3, :), 50, colors, 'filled');
+    scatter(all_p_init(1, :), all_p_init(3, :), 50, colors, 'filled');
     
     xlabel('$x$ [mm]', 'FontSize', fontsize, 'Interpreter', 'latex');
     if j == 1
@@ -135,23 +143,20 @@ for j = 1:num_methods
     % 构造数据用于boxchart（横向）
     % y: [位置误差; 旋转误差]
     % group: 1=位置, 2=旋转
-    y = [pos_errors; rot_errors];
-    group = [ones(size(pos_errors)); 2*ones(size(rot_errors))];
+    y = [pos_errors, rot_errors];
     
-    % 使用 categorical 数组来分组，并指定标签
-    group_cat = categorical(group, [1, 2]);
-    
-    % 绘制横向箱线图
-    b = boxchart(group_cat, y, 'Orientation', 'horizontal');
-    
+    boxplot(y, 'Labels', {'Position', 'Rotation'}, ...
+        'Orientation', 'horizontal');
+
     % 设置颜色：灰色，黑色边框
     % boxchart 会为每个类别创建一个 BoxChart 对象
-    box_charts = findobj(gca, 'Type', 'BoxChart');
-    for idx = 1:length(box_charts)
-        box_charts(idx).BoxFaceColor = [1 1 1];  % 白色
-        box_charts(idx).BoxEdgeColor = [0 0 0];        % 黑色边框
-        box_charts(idx).LineWidth = 1;              % 边框线宽
-    end
+    colors = slanCM('gor', 2);
+
+    boxes = findobj(gca, 'Tag', 'Box');
+    set(boxes, 'Color', colors(1, :));
+    medians = findobj(gca, 'Tag', 'Median');
+    set(medians, 'Color', colors(2, :), 'LineWidth', 1.5);  % 中位线颜色设为黑色
+
     if j == 1
         yticklabels({'$e_{\mbox{\boldmath ${p}$}}$', '$e_{\mbox{\boldmath ${R}$}}$'});
     else

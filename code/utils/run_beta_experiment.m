@@ -23,7 +23,6 @@ m_norm = params.magnet.m_norm;
 theta_true = params.ground_truth.theta_true;
 p_uncertainty = params.uncertainty.p_uncertainty;
 r_uncertainty = params.uncertainty.r_uncertainty;
-mu = params.optimization.mu;
 
 % ==== 初始值猜测 ====
 init_error = -1 + 2 * rand(3,1); % [-1, 1]
@@ -49,23 +48,22 @@ B_bar = B_matrix * Q_bar;
 R_init_est = estimateR(b_bar, B_bar, A_p, X_opt); % 一次初始化结果
 
 R_beta_history = {};
-% beta_vec = [0, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6];
-% beta_vec = [0, 1e-2, 1, 1e1, 5e1, 1e2, 5e2, 1e3];
-% for beta = beta_vec
-%     R_beta = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu, beta, R_true); % using R_init
-%     R_beta.eR = norm(R_true - R_beta.R, 'fro');
-%     R_beta_history{end+1} = R_beta;
-%     R_beta
-% end
-
-R_mu_history = {};
-mu_vec = [0, 1e-3, 1e-2, 1e-1, 1, 1e1, 1e2, 1e3];
-for mu = mu_vec
-    R_mu = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu, 0, R_true); % using R_init
-    R_mu.eR = norm(R_true - R_mu.R, 'fro');
-    R_mu_history{end+1} = R_mu;
-    R_mu
+beta_vec = 1e2;
+for beta = beta_vec
+    R_beta = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu, beta, R_true); % using R_init
+    R_beta.eR = norm(R_true - R_beta.R, 'fro');
+    R_beta_history{end+1} = R_beta;
+    R_beta
 end
+
+% R_mu_history = {};
+% mu_vec = [0, 1e-3, 1e-2, 1e-1, 1, 1e1, 1e2, 1e3];
+% for mu = mu_vec
+%     R_mu = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu, 0, R_true); % using R_init
+%     R_mu.eR = norm(R_true - R_mu.R, 'fro');
+%     R_mu_history{end+1} = R_mu;
+%     R_mu
+% end
 
 R_init_est = struct('R_init_est', R_init_est, 'eR_init_est', norm(R_true - R_init_est, 'fro'));
 
