@@ -1,11 +1,12 @@
 clc,clear,close all
-addpath('../results/')
-load('beta_sensitive.mat');
+% addpath('../results/')
+load('../../results/beta_sensitive.mat');
 
+fontsize = 16;
 tl = tiledlayout(1, 2);
-set(gcf, 'color', 'w', 'units', 'centimeters', 'position', 2.3*[0, 0, 8.9, 8.9/2/1.26]);
-tl.TileSpacing = 'compact';
-tl.Padding = 'compact';
+set(gcf, 'color', 'w', 'units', 'centimeters', 'position', [0, 0, 19.8, 7.5]);
+% tl.TileSpacing = 'compact';
+tl.Padding = 'tight';
 nexttile(tl, 1)
 
 num_beta = batch_results(1).results{1}.num_beta;
@@ -23,15 +24,15 @@ h = legend('$\kappa = 0$', '$\kappa = 10^{-2}$', '$\kappa = 1$', '$\kappa = 10^1
 'Interpreter', 'latex', 'FontSize', 12, 'Location', 'best');
 h.ItemTokenSize = [10, 10];
 h.Color = [1, 1, 1];
-xlabel('$k$', 'Interpreter', 'latex', 'FontSize', 14);
-ylabel('$e_{\mbox{\boldmath{$R$}}}$ [rad]', 'Interpreter', 'latex', 'FontSize', 14);
+xlabel('$k$', 'Interpreter', 'latex', 'FontSize', fontsize);
+ylabel('$e_{\mbox{\boldmath{$R$}}}$ [rad]', 'Interpreter', 'latex', 'FontSize', fontsize);
 grid on;
 ylim([0, 0.18]);yticks(0:0.05:0.15);
-set(gca, 'TickLabelInterpreter', 'latex', 'FontSize', 14, 'LineWidth', 1);
+set(gca, 'TickLabelInterpreter', 'latex', 'FontSize', fontsize, 'LineWidth', 1);
 
 nexttile(tl, 2)
 % 注意：不要使用clear，会清除之前加载的数据
-load('beta_robust_2.mat');
+load('../../results/beta_robust_2.mat');
 
 num_beta = batch_results(1).results{1}.num_beta;
 num_points = size(batch_results, 2);
@@ -51,9 +52,9 @@ end
 
 % 创建eR_matrix的箱线图
 % figure;
-eR_matrix = eR_matrix(:, [1, 2, 3, 4, 6, 8]);
-boxplot(eR_matrix, 'Labels', {'1', '2', '3', '4', '5', '6'}, ...
-'Labels', {'$0$', '$10^{-2}$', '$1$', '$10^1$', '$10^2$', '$10^3$'}, 'widths', 0.2);
+eR_matrix = eR_matrix(:, [1, 2, 3, 4, 6]);
+boxplot(eR_matrix, 'Labels', {'1', '2', '3', '4', '5'}, ...
+'Labels', {'$0$', '$10^{-2}$', '$1$', '$10^1$', '$10^2$'}, 'widths', 0.2);
 % 设置boxplot的线条为黑色，内线为红色。box的T字形为实线
 
 colors = slanCM('gor', 2);
@@ -65,11 +66,11 @@ set(boxes, 'Color', colors(1, :));   % 箱体外边颜色改为绿色
 medians = findobj(gca, 'Tag', 'Median');
 set(medians, 'Color', colors(2, :), 'LineWidth', 1.5);  % 中位线颜色设为红色
 
-xlabel('$\kappa$', 'Interpreter', 'latex', 'FontSize', 14);
-ylabel('$e_{\mbox{\boldmath{$R$}}}$ [rad]', 'Interpreter', 'latex', 'FontSize', 14);
+xlabel('$\kappa$', 'Interpreter', 'latex', 'FontSize', fontsize);
+ylabel('$e_{\mbox{\boldmath{$R$}}}$ [rad]', 'Interpreter', 'latex', 'FontSize', fontsize);
 yticks(0:0.01:0.03);
-set(gca, 'TickLabelInterpreter', 'latex', 'FontSize', 14, 'LineWidth', 1);
+set(gca, 'TickLabelInterpreter', 'latex', 'FontSize', fontsize, 'LineWidth', 1);
 grid on;
 
 %% 
-export_fig('../figures/beta_results.png', '-png', '-r600');
+% export_fig('../../figures/beta_results.png', '-png', '-r600');

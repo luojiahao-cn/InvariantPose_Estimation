@@ -39,6 +39,8 @@ function [R_opt1, R_opt2] = estimateR(b_bar, B_bar, A_p, X)
     
     % --- 得到初步 R ---
     R_opt1 = PA * bestP * PX';
+
+    R_opt1 = PA * diag(sign(diag(PX'*PA)))*PX';
     
     % --- 统一调整到 SO(3)，避免独立翻 PA/PX 的符号 ---
     if det(R_opt1) < 0

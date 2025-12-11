@@ -1,8 +1,8 @@
-function plot_init_results()
+function plot_init_results(batch_results)
 % PLOT_BATCH_RESULTS 绘制批量实验结果
 % 输入：
 %   batch_results - 由 run_batch_experiments 返回的批量结果结构体数组
-load('../../results/initial_cond_config1_20251211.mat', 'batch_results');
+% load('../../results/initial_cond_config1_20251211.mat', 'batch_results');
 num_points = length(batch_results);
 num_methods = 4;  % LM, ELM, Ours, Rlm
 
@@ -39,7 +39,7 @@ set(gcf, 'color', 'w', 'units', 'centimeters', ...
 tiledlayout(1, 3, 'TileSpacing', 'compact', 'Padding', 'compact');
 
 fontsize = 16;
-method_labels = {'Ours', 'LM', 'ELM', 'Fischer'};
+method_labels = {'Ours', '(1)', '(4)', 'Fischer'};
 
 %% 1. Pos
 nexttile;
@@ -79,7 +79,7 @@ set(gca, 'XTick', 1:num_methods, 'XTickLabel', method_labels, ...
 ylabel('$t$ [ms]', 'Interpreter', 'latex');
 grid on;
 set(gca, 'FontSize', fontsize, 'TickDir', 'out', 'LineWidth', 1);
-
-
+%%
+% export_fig('../../figures/init_results_config1.png', '-png', '-r600', '-nocrop');
 end
 
