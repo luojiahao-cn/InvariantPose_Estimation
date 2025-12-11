@@ -23,7 +23,7 @@ pos_error_matrix = zeros(num_points, num_methods);
 rot_error_matrix = zeros(num_points, num_methods);
 
 method_names = {'ours', 'fischer', 'elm', 'lm'};
-% method_labels = {'Ours', 'Fischer', 'ELM', 'LM'};
+method_labels = {'Ours', 'Fischer', 'ELM', 'LM'};
 
 for i = 1:num_points
     for j = 1:num_methods
@@ -37,7 +37,7 @@ end
 
 % 先将位置误差和旋转误差直接相加，再全局归一化
 rot_error_matrix_ = rot_error_matrix;
-rot_error_matrix_(rot_error_matrix_ > 0.5) = 0.5;
+rot_error_matrix_(rot_error_matrix_ > 0.1) = 0.1;
 error_matrix = pos_error_matrix + rot_error_matrix_;
 
 % 归一化综合误差到[0,1]用于颜色映射（全局归一化）
@@ -54,7 +54,7 @@ n_colors = 256;
 custom_colormap = slanCM('gor', n_colors);
 
 % 创建图形
-figure('Color', 'white', 'units', 'centimeters', 'Position', [0, 0, 28, 18]);
+figure('Color', 'white', 'units', 'centimeters', 'Position', [0, 0, 30, 16]);
 
 tl = tiledlayout(4, num_methods, 'TileSpacing', 'compact', 'Padding', 'compact');
 % x-y 平面 scatter，占据前两行, 每个方法合并两行（2行1列）
@@ -88,7 +88,7 @@ for j = 1:num_methods
     xticklabels({'-10', '0', '10'});
     xlim([-0.15, 0.15]);
     ylim([-0.15, 0.15]);
-    % title(sprintf(method_labels{j}), 'FontSize', fontsize, 'FontWeight', 'bold');
+    title(sprintf(method_labels{j}), 'FontSize', fontsize, 'FontWeight', 'bold');
     grid off;
     % axis equal;
     box on;

@@ -36,8 +36,8 @@ B_bar = B_matrix * Q_bar;
 [R_init_est1, R_init_est2] = estimateR(b_bar, B_bar, A_p, X_opt);
 
 mu = 1e2;
-beta = 1e2;
-R_PPI = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu, beta, params.R_true); % using R_init
+beta = 1e1;
+R_PPI = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init_est1, mu, beta, params.R_true); % using R_init
 
 R_est = R_PPI.R;
 stats.X_opt = X_opt;         % 估计的梯度矩阵
