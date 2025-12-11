@@ -26,7 +26,7 @@ function R_struct = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu, beta, R
     delta_history = [];
     eR_history = norm(R_true - R_init, 'fro');
     f_history = fbar(R_init);
-    deltabd = 1e-5;
+    deltabd = 1e-4;
     while k < kmax && delta > deltabd
         [U, ~, V] = svd(Mbar(R));
         R_opt = U*diag([1,1,det(U*V')])*V';

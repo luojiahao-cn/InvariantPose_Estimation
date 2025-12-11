@@ -65,13 +65,6 @@ function [p_est, R_est, stats] = estimate_pose_fischer( ...
 
     %% 构建磁场差矩阵和位移矩阵
     % X_opt_ours = lc_grad_tensor_estimator(b_total, d_list);
-
-    % [~, A_p_true] = calcFieldAndGradient(params.p_true, m_pos, m_hat, m_norm);
-    % R_true = params.R_true;
-    % X_true = R_true'*A_p_true*R_true;
-    % norm(X_opt - X_true, 'fro')
-    % norm(X_opt_ours - X_true, 'fro')
-
     %% 传感器系特征分解，得到 R_sv
     [V_s, D_s] = eig(X_opt);
     [lambda_s, idx_s] = sort(diag(D_s), 'ascend');
@@ -98,7 +91,6 @@ function [p_est, R_est, stats] = estimate_pose_fischer( ...
     shrink_factor = 1.4;
 
     %% 粗到细网格搜索估计位置
-    % p_est     = p_init(:);
     p_est = p_init;
     cost_prev = inf;
 
@@ -126,7 +118,7 @@ function [p_est, R_est, stats] = estimate_pose_fischer( ...
             p = P_grid(k, :)';
 
             % 模型场和梯度（世界坐标系）
-            [b_w, A_p] = calcFieldAndGradient(p, m_pos, m_hat, m_norm);
+            [b_w, A_p] = calcFieldAndGradient(params.p_true, m_pos, m_hat, m_norm);
 
             % 模型不变量
             norm_b_mod = norm(b_w);

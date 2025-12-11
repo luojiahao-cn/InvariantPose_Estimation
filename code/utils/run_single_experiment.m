@@ -85,7 +85,7 @@ result.R_lm    = R_lm;
 result.p_elm   = p_elm;
 result.R_elm   = R_elm;
 result.p_ours  = p_ours;
-result.R_ours  = R_ours.PPI;
+result.R_ours  = R_ours;
 result.p_fischer = p_fischer;
 result.R_fischer = R_fischer;
 result.p_Rlm   = p_Rlm;
@@ -109,7 +109,7 @@ result.elm_rot_error = norm(R_elm - R_true, 'fro');
 
 % 所提算法
 result.ours_pos_error = norm(p_ours - p_true);
-result.ours_rot_error = norm(R_ours.PPI - R_true, 'fro');
+result.ours_rot_error = norm(R_ours - R_true, 'fro');
 
 % Fischer
 result.fischer_pos_error = norm(p_fischer - p_true);

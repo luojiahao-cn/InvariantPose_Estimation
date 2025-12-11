@@ -4,7 +4,7 @@ addpath('./utils')
 addpath('./Functions')
 addpath('./tools')
 
-d0 = 1e-3;
+d0 = 1.5e-3;
 d_list1 = [[0; 0; 0],...
     [d0; 0; 0],...
     [0; d0; 0],...
@@ -17,8 +17,6 @@ d_list1 = [[0; 0; 0],...
     [d0; d0; -d0],...
     [0; 2*d0; -d0],...
     [d0; 2*d0; -d0]]; % redundant config 1
-
-% 计算几何中心
 dc1 = mean(d_list1, 2);
 d_list1 = d_list1 - dc1;
 
@@ -26,22 +24,19 @@ d_list2 = [[0; 0; 0],...
     [d0; 0; 0],...
     [0; 0; -d0],...
     [d0; 0; -d0]]; % redundant config 2
-
 dc2 = mean(d_list2, 2);
 d_list2 = d_list2 - dc2;
 
 d_list3 = [[0; 0; 0],...
     [d0; 0; 0],...
-    [d0; 0; -d0]]; % minimal config 3
-% dc3 = [0; d0/2; -d0/2];
-dc3 = mean(d_list3, 2);
+    [0; 0; -d0]]; % minimal config 3
+dc3 = [d0/2; 0; 0];
 d_list3 = d_list3 - dc3;
 
 d_list4 = [[d0; 0; 0],...
     [0; d0; 0],...
     [0; 0; d0]];
-% dc4 = [0; 0; 0];
-dc4 = mean(d_list4, 2);
+dc4 = [0; 0; 0];
 d_list4 = d_list4 - dc4;
 
 %% ========== 参数配置 ==========

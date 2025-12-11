@@ -18,37 +18,33 @@ num_sensors = size(b_total, 2);
 %% 构建磁场差矩阵和位移矩阵
 X_opt = lc_grad_tensor_estimator(b_total, d_list);
 
-%% 阶段检查 对应公式2
-% [~, A_p_true] = calcFieldAndGradient(params.p_true, m_pos, m_hat, m_norm);
-% R_true = params.R_true;
-% X_true = R_true'*A_p_true*R_true;
-% norm(R_true'*b_p*ones(1,num_sensors)+R_true'*A_p*R_true*d_list - b_total, 'fro')
-% norm(R_true'*A_p*R_true*D_matrix - B_matrix, 'fro')
-
 %% Stage #1: Estimate for position \hat{p}
-% 对d_list'进行QR分解
 [Q, ~] = qr(d_list');
 r = rank(d_list); % 构型判据
 Q_bar = Q(:, r+1:end);
 b_bar = b_total * Q_bar; % 计算bBar
-% 优化第一阶段位置
+
+% 粗搜索+精搜索
+% p_est = grid_search(p_init, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt, lb_p, ub_p);
 fun22 = @(p) obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt);
 p_est = lsqnonlin(fun22, p_init, lb_p, ub_p, options);
+
 %% Stage #2: Estimate for rotation \hat{R}
 [b_p, A_p] = calcFieldAndGradient(p_est, m_pos, m_hat, m_norm);
 B_matrix = b_p * ones(1, num_sensors);
 B_bar = B_matrix * Q_bar;
 [R_init_est1, R_init_est2] = estimateR(b_bar, B_bar, A_p, X_opt);
 
-mu = 1;
+mu = 1e2;
 beta = 1e2;
-R_PPI = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init_est1, mu, beta, params.R_true); % using R_init
+R_PPI = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu, beta, params.R_true); % using R_init
+
+R_est = R_PPI.R;
 stats.X_opt = X_opt;         % 估计的梯度矩阵
+stats.R_est_init1 = R_init_est1;
+stats.R_est_init2 = R_init_est2;
 stats.R_iter_history = R_PPI.R_iter_history; % 每次迭代的R
 stats.delta_history = R_PPI.delta_history;   % 每次迭代的delta
-R_est.PPI = R_PPI.R; % 返回最终R
-R_est.R_init_est1 = R_init_est1;
-R_est.R_init_est2 = R_init_est2;
 end
 
 %% ----------------------------Functions-------------------------------  %%
@@ -58,5 +54,60 @@ function res = obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X)
     term1 = norm(b_p * ones(1, num_sensors) * Q_bar, 'fro') - norm(b_bar, 'fro');
     term2 = trace(A_p*A_p) - trace(X*X);
     term3 = det(A_p) - det(X);
+    % term2 = norm(A_p, 'fro') - norm(X, 'fro');
+    % term3 = sort(eig(A_p), 'ascend') - sort(eig(X), 'ascend');
     res = [term1; term2; term3];
+end
+
+%% 网格粗搜索
+function p_est = grid_search(p_init, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt, lb_p, ub_p)
+    %% 解析 options
+    epsilon       = 0.3;
+    grid_step     = 0.02;
+    num_iter      = 4;
+    shrink_factor = 1.4;
+
+    %% 粗到细网格搜索估计位置
+    cost_prev = inf;
+
+    p_est = p_init;
+    cost_history = nan(num_iter, 1);
+    p_history    = nan(3, num_iter);
+
+    for it = 1:num_iter
+
+        % 当前搜索立方体范围
+        x_min = max(lb_p(1), p_est(1) - epsilon/2);
+        x_max = min(ub_p(1), p_est(1) + epsilon/2);
+        y_min = max(lb_p(2), p_est(2) - epsilon/2);
+        y_max = min(ub_p(2), p_est(2) + epsilon/2);
+        z_min = max(lb_p(3), p_est(3) - epsilon/2);
+        z_max = min(ub_p(3), p_est(3) + epsilon/2);
+
+        x_grid = x_min:grid_step:x_max;
+        y_grid = y_min:grid_step:y_max;
+        z_grid = z_min:grid_step:z_max;
+
+        [Xg, Yg, Zg] = ndgrid(x_grid, y_grid, z_grid);
+        P_grid = [Xg(:), Yg(:), Zg(:)];
+
+        for k = 1:size(P_grid, 1)
+            p = P_grid(k, :)';
+
+            cost = norm(obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt));
+            if cost < cost_prev
+                cost_prev = cost;
+                p_est     = p;
+            end
+        end
+
+        % shading interp;
+        cost_history(it) = cost_prev;
+        p_history(:,it)  = p_est;
+
+        % 缩小搜索范围和步长
+        epsilon   = epsilon   / shrink_factor;
+        grid_step = grid_step / shrink_factor;
+    end
+
 end

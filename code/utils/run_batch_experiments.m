@@ -41,7 +41,8 @@ for point_idx = 1:num_test_points
     
     % 为当前测试点生成磁场数据
     [b_total, ~, ~, ~, ~] = generate_magnetic_data(params_current);
-    % b_total = b_total + 1e-4 * randn(size(b_total)); % add noise to the magnetic field data
+    % 静磁场下LM就炸了
+    % b_total = b_total + kron([1e-4; 1e-4; 1e-4], ones(1, size(params_current.sensor.d_list, 2))); % add noise to the magnetic field data
     
     % 计算真实旋转矩阵
     R_true = MatrixExp3(VecToso3(test_points(point_idx).theta_true));

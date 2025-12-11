@@ -23,7 +23,7 @@ pos_error_matrix = zeros(num_points, num_methods);
 rot_error_matrix = zeros(num_points, num_methods);
 
 method_names = {'ours', 'fischer', 'elm', 'lm'};
-method_labels = {'Ours', 'Fischer', 'ELM', 'LM'};
+% method_labels = {'Ours', 'Fischer', 'ELM', 'LM'};
 
 for i = 1:num_points
     for j = 1:num_methods
@@ -54,7 +54,7 @@ n_colors = 256;
 custom_colormap = slanCM('gor', n_colors);
 
 % 创建图形
-figure('Color', 'white', 'units', 'centimeters', 'Position', [0, 0, 28, 13]);
+figure('Color', 'white', 'units', 'centimeters', 'Position', [0, 0, 28, 18]);
 
 tl = tiledlayout(4, num_methods, 'TileSpacing', 'compact', 'Padding', 'compact');
 % x-y 平面 scatter，占据前两行, 每个方法合并两行（2行1列）
@@ -204,8 +204,7 @@ for j = 1:num_methods
 end
 
 %%
-% mean(time_matrix);
-% std(time_matrix);
+mean(time_matrix)
 % save('../results/initial_cond_config1.mat');
 % export_fig('../figures/initial_cond_config1.png', '-r600', '-nocrop');
 end
