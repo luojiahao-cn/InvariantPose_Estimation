@@ -20,13 +20,13 @@ function R_struct = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu, beta, R
     % g = @(R) 2 * skw(R' * (2 * A_p * R * X_opt + mu * B_bar * b_bar' + beta * eye(3)));
     % gbar = @(R) 2 * skw(R' * (2 * At * R * Xt + mu * B_bar * b_bar' + beta * eye(3)));
     %% Initial condition
-    delta = 1e6; k = 0; kmax = 1e4;
+    delta = inf; k = 0; kmax = 1e4;
     R = R_init;
     R_iter_history{1} = R_init;
     delta_history = [];
     eR_history = norm(R_true - R_init, 'fro');
     f_history = fbar(R_init);
-    deltabd = 1e-4;
+    deltabd = 1e-5;
     while k < kmax && delta > deltabd
         [U, ~, V] = svd(Mbar(R));
         R_opt = U*diag([1,1,det(U*V')])*V';

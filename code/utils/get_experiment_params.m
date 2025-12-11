@@ -36,7 +36,7 @@ params.magnet.m_pos = [
 %     [0.2588;0;0.9659]
 %     ];
 params.magnet.m_hat = params.magnet.m_hat ./ vecnorm(params.magnet.m_hat);
-params.magnet.m_norm = [300, 300];
+params.magnet.m_norm = [500, 500];
 
 %% 默认传感器参数
 params.sensor.d_list = [
@@ -49,7 +49,7 @@ params.sensor.d_list = [
     [0; 0; -1e-3]
     ];
 %% 默认真实位姿
-params.ground_truth.theta_true = [0; 0; 0]; % 真实旋转向量 [rad] % 不是致命原因
+params.ground_truth.theta_true = [1; 1; 1]; % 真实旋转向量 [rad] % 不是致命原因
 params.ground_truth.p_true = [0; 0; 0]; % 传感器阵列参考点真实位置 [m]
 %% 不确定性参数
 params.uncertainty.p_uncertainty = 0.15; % 位置不确定性
@@ -58,10 +58,7 @@ params.uncertainty.r_uncertainty = 0.5;  % 旋转不确定性
 %% 优化算法参数
 params.optimization.options = optimoptions('lsqnonlin', ...
     'Algorithm', 'levenberg-marquardt', ...
-    'Display', 'off', ...
-    'MaxFunctionEvaluations', 600, ... % default: 200 * number of variables
-    'MaxIterations', 200, ... % default: 400
-    'OptimalityTolerance', 1e-6); % default: 1e-6  % 全都是default值
+    'Display', 'off'); % default: 1e-6  % 全都是default值
 
 params.optimization.mu = 1;   % 所提算法的mu参数
 params.optimization.beta = 1e2;   % 所提算法的beta参数

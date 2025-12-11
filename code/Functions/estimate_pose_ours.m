@@ -25,10 +25,11 @@ Q_bar = Q(:, r+1:end);
 b_bar = b_total * Q_bar; % 计算bBar
 
 % 粗搜索+精搜索
-% p_est = grid_search(p_init, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt, lb_p, ub_p);
-fun22 = @(p) obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt);
-p_est = lsqnonlin(fun22, p_init, lb_p, ub_p, options);
-
+p_est = grid_search(p_init, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt, lb_p, ub_p);
+% p_est = p_init;
+% fun22 = @(p) obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt);
+% p_est = lsqnonlin(fun22, p_est, lb_p, ub_p, options);
+% output.message
 %% Stage #2: Estimate for rotation \hat{R}
 [b_p, A_p] = calcFieldAndGradient(p_est, m_pos, m_hat, m_norm);
 B_matrix = b_p * ones(1, num_sensors);
@@ -52,22 +53,22 @@ end
 function res = obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X)
     [b_p, A_p] = calcFieldAndGradient(p, m_pos, m_hat, m_norm);
     term1 = norm(b_p * ones(1, num_sensors) * Q_bar, 'fro') - norm(b_bar, 'fro');
-    term2 = trace(A_p*A_p) - trace(X*X);
-    term3 = det(A_p) - det(X);
-    % term2 = norm(A_p, 'fro') - norm(X, 'fro');
-    % term3 = sort(eig(A_p), 'ascend') - sort(eig(X), 'ascend');
-    res = [term1; term2; term3];
+    % term2 = trace(A_p*A_p) - trace(X*X);
+    % term3 = det(A_p) - det(X);
+    term5 = sort(eig(A_p), 'ascend') - sort(eig(X), 'ascend'); % 特征值匹配
+    res = [term1; term5];
+    % res = [term1; term2; term5];
 end
 
 %% 网格粗搜索
 function p_est = grid_search(p_init, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt, lb_p, ub_p)
-    %% 解析 options
+    % 解析 options
     epsilon       = 0.3;
-    grid_step     = 0.02;
+    grid_step     = 0.04;
     num_iter      = 4;
     shrink_factor = 1.4;
 
-    %% 粗到细网格搜索估计位置
+    % 粗到细网格搜索估计位置
     cost_prev = inf;
 
     p_est = p_init;

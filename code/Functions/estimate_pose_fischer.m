@@ -86,7 +86,7 @@ function [p_est, R_est, stats] = estimate_pose_fischer( ...
 
     %% 解析 options
     epsilon       = 0.3;
-    grid_step     = 0.2;
+    grid_step     = 0.04;
     num_iter      = 4;
     shrink_factor = 1.4;
 
@@ -118,7 +118,7 @@ function [p_est, R_est, stats] = estimate_pose_fischer( ...
             p = P_grid(k, :)';
 
             % 模型场和梯度（世界坐标系）
-            [b_w, A_p] = calcFieldAndGradient(p_est, m_pos, m_hat, m_norm);
+            [b_w, A_p] = calcFieldAndGradient(p, m_pos, m_hat, m_norm);
 
             % 模型不变量
             norm_b_mod = norm(b_w);
@@ -149,29 +149,29 @@ function [p_est, R_est, stats] = estimate_pose_fischer( ...
     [b_p, A_p_final] = calcFieldAndGradient(p_est, m_pos, m_hat, m_norm);
 
     % % % 对d_list'进行QR分解
-    [Q, ~] = qr(d_list');
-    r = rank(d_list); % 构型判据
-    Q_bar = Q(:, r+1:end);
-    b_bar = b_total * Q_bar; % 计算bBar
+    % [Q, ~] = qr(d_list');
+    % r = rank(d_list); % 构型判据
+    % Q_bar = Q(:, r+1:end);
+    % b_bar = b_total * Q_bar; % 计算bBar
 
-    B_matrix = b_p * ones(1, num_sensors);
-    B_bar = B_matrix * Q_bar;
+    % B_matrix = b_p * ones(1, num_sensors);
+    % B_bar = B_matrix * Q_bar;
 
-    [R_est, ~] = estimateR(b_bar, B_bar, A_p_final, X_opt);
+    % [R_est, ~] = estimateR(b_bar, B_bar, A_p_final, X_opt);
 
-    % [V_w, D_w] = eig(A_p_final);
-    % [lambda_w, idx_w] = sort(diag(D_w), 'ascend');
-    % V_w = V_w(:, idx_w);
+    [V_w, D_w] = eig(A_p_final);
+    [lambda_w, idx_w] = sort(diag(D_w), 'ascend');
+    V_w = V_w(:, idx_w);
 
-    % if det(V_w) < 0
-    %     V_w(:,1) = -V_w(:,1);
-    % end
+    if det(V_w) < 0
+        V_w(:,1) = -V_w(:,1);
+    end
 
-    % Rwv = V_w;        % eigenvector matrix in {w}
-    % lambda_w = lambda_w(:);
+    Rwv = V_w;        % eigenvector matrix in {w}
+    lambda_w = lambda_w(:);
 
-    % % 传感器系到世界系的旋转
-    % R_est = Rwv * Rsv';
+    % 传感器系到世界系的旋转
+    R_est = Rwv * Rsv';
 
     %% 输出一些调试信息
     stats = struct();

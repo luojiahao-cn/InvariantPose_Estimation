@@ -37,7 +37,7 @@ end
 
 % 先将位置误差和旋转误差直接相加，再全局归一化
 rot_error_matrix_ = rot_error_matrix;
-rot_error_matrix_(rot_error_matrix_ > 0.1) = 0.1;
+rot_error_matrix_(rot_error_matrix_ > 0.3) = 0.3;
 error_matrix = pos_error_matrix + rot_error_matrix_;
 
 % 归一化综合误差到[0,1]用于颜色映射（全局归一化）
@@ -54,7 +54,7 @@ n_colors = 256;
 custom_colormap = slanCM('gor', n_colors);
 
 % 创建图形
-figure('Color', 'white', 'units', 'centimeters', 'Position', [0, 0, 30, 14]);
+figure('Color', 'white', 'units', 'centimeters', 'Position', [0, 0, 30, 15]);
 
 tl = tiledlayout(4, num_methods, 'TileSpacing', 'compact', 'Padding', 'compact');
 % x-y 平面 scatter，占据前两行, 每个方法合并两行（2行1列）
@@ -196,8 +196,6 @@ for j = 1:num_methods
 
     % 设置坐标轴（使用 categorical 值）
     set(gca, 'FontSize', fontsize, 'TickDir', 'out', 'TickLabelInterpreter', 'latex', 'LineWidth', 1);
-    % xlabel('RMSE', 'FontSize', fontsize, 'Interpreter', 'latex');
-    % xlim([0, 40]);
     axis auto;
     box on;
 
