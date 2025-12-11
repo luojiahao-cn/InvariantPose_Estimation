@@ -86,7 +86,7 @@ function [p_est, R_est, stats] = estimate_pose_fischer( ...
 
     %% 解析 options
     epsilon       = 0.3;
-    grid_step     = 0.04;
+    grid_step     = 0.02;
     num_iter      = 4;
     shrink_factor = 1.4;
 
