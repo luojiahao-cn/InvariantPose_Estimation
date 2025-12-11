@@ -18,6 +18,8 @@ for i = 1:num_points
     all_p_init = [all_p_init, batch_results(i).results.p_init];
 end
 
+p_init_dist = vecnorm(all_p_init - all_p_true);
+
 % 提取所有测试点的误差（使用summary中的均值）
 pos_error_matrix = zeros(num_points, num_methods);
 rot_error_matrix = zeros(num_points, num_methods);

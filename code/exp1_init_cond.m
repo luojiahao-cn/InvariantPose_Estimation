@@ -47,7 +47,7 @@ rng(params.experiment.random_seed);
 
 %% ========== 生成测试点 ==========
 % 生成100个测试点（p_true 和 theta_true 的组合）
-num_test_points = 300;  % 测试点数量
+num_test_points = 500;  % 测试点数量
 num_trials_per_point = 1;  % 每个测试点的实验次数（用于测试不同初始值）
 
 % 生成方法选项：
@@ -66,6 +66,8 @@ analyze_batch_results(batch_results);
 
 %% ========== 结果可视化 ==========
 plot_batch_results(batch_results);
+
+plot_init_results(batch_results);
 
 % %% ========== 保存结果 ==========
 % save('results/exp1_batch_results.mat', 'batch_results', 'test_points', 'params');
