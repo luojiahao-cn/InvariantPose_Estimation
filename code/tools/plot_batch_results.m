@@ -22,8 +22,8 @@ end
 pos_error_matrix = zeros(num_points, num_methods);
 rot_error_matrix = zeros(num_points, num_methods);
 
-method_names = {'ours', 'fischer', 'elm', 'lm'};
-method_labels = {'Ours', 'Fischer', 'ELM', 'LM'};
+method_names = {'ours', 'lm', 'elm', 'fischer'};
+method_labels = {'Ours', 'LM', 'ELM', 'Fischer'};
 
 for i = 1:num_points
     for j = 1:num_methods
@@ -54,7 +54,7 @@ n_colors = 256;
 custom_colormap = slanCM('gor', n_colors);
 
 % 创建图形
-figure('Color', 'white', 'units', 'centimeters', 'Position', [0, 0, 30, 16]);
+figure('Color', 'white', 'units', 'centimeters', 'Position', [0, 0, 30, 14]);
 
 tl = tiledlayout(4, num_methods, 'TileSpacing', 'compact', 'Padding', 'compact');
 % x-y 平面 scatter，占据前两行, 每个方法合并两行（2行1列）
@@ -169,8 +169,8 @@ for j = 1:num_methods
     % 设置坐标轴（使用 categorical 值）
     set(gca, 'FontSize', fontsize, 'TickDir', 'out', 'TickLabelInterpreter', 'latex', 'LineWidth', 1);
     % xlabel('RMSE [-]', 'FontSize', fontsize, 'Interpreter', 'latex');
-    xlim([0, 0.15]);
-    % axis auto;
+    % xlim([0, 0.15]);
+    axis auto;
     box on;
 
     nexttile(subtl, 2); % 15,16

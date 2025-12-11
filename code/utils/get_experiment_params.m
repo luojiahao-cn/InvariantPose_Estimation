@@ -61,7 +61,7 @@ params.optimization.options = optimoptions('lsqnonlin', ...
     'Display', 'off', ...
     'MaxFunctionEvaluations', 600, ... % default: 200 * number of variables
     'MaxIterations', 200, ... % default: 400
-    'OptimalityTolerance', 1e-6); % default: 1e-6
+    'OptimalityTolerance', 1e-6); % default: 1e-6  % 全都是default值
 
 params.optimization.mu = 1;   % 所提算法的mu参数
 params.optimization.beta = 1e2;   % 所提算法的beta参数
