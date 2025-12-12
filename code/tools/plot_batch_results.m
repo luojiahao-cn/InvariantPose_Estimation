@@ -3,7 +3,7 @@ function plot_batch_results(batch_results)
 % 输入：
 %   batch_results - 由 run_batch_experiments 返回的批量结果结构体数组
 
-fontsize = 16;
+fontsize = 14;
 
 num_points = length(batch_results);
 num_methods = 4;  % LM, ELM, Ours, Rlm
@@ -13,19 +13,13 @@ all_coords = [batch_results.test_point];
 all_p_true = [all_coords.p_true];  % 3×num_points 矩阵
 % all_p_init = [all_coords.p_init];
 % 提取所有batch_results(N).results.p_init
-all_p_init = [];
-for i = 1:num_points
-    all_p_init = [all_p_init, batch_results(i).results.p_init];
-end
-
-p_init_dist = vecnorm(all_p_init - all_p_true);
 
 % 提取所有测试点的误差（使用summary中的均值）
 pos_error_matrix = zeros(num_points, num_methods);
 rot_error_matrix = zeros(num_points, num_methods);
 
 method_names = {'ours', 'lm', 'elm', 'fischer'};
-method_labels = {'Ours', 'LM', 'ELM', 'Fischer'};
+method_labels = {'Ours', '(1)', '(4)', 'Fischer'};
 
 for i = 1:num_points
     for j = 1:num_methods
@@ -39,7 +33,7 @@ end
 
 % 先将位置误差和旋转误差直接相加，再全局归一化
 rot_error_matrix_ = rot_error_matrix;
-rot_error_matrix_(rot_error_matrix_ > 0.3) = 0.3;
+rot_error_matrix_(rot_error_matrix_ > 0.5) = 0.5;
 error_matrix = pos_error_matrix + rot_error_matrix_;
 
 % 归一化综合误差到[0,1]用于颜色映射（全局归一化）
@@ -75,8 +69,8 @@ for j = 1:num_methods
     end
     
     % 绘制散点图
-    % scatter(all_p_true(1, :), all_p_true(2, :), 50, colors, 'filled');
-    scatter(all_p_init(1, :), all_p_init(2, :), 50, colors, 'filled');
+    scatter(all_p_true(1, :), all_p_true(2, :), 50, colors, 'filled');
+    % scatter(all_p_init(1, :), all_p_init(2, :), 50, colors, 'filled');
     
     xlabel('$x$ [mm]', 'FontSize', fontsize, 'Interpreter', 'latex');
     if j == 1
@@ -90,7 +84,7 @@ for j = 1:num_methods
     xticklabels({'-10', '0', '10'});
     xlim([-0.15, 0.15]);
     ylim([-0.15, 0.15]);
-    title(sprintf(method_labels{j}), 'FontSize', fontsize, 'FontWeight', 'bold');
+    title(sprintf(method_labels{j}), 'FontSize', fontsize, 'Interpreter', 'latex');
     grid off;
     % axis equal;
     box on;
@@ -111,8 +105,7 @@ for j = 1:num_methods
     end
     
     % 绘制散点图
-    % scatter(all_p_true(1, :), all_p_true(3, :), 50, colors, 'filled');
-    scatter(all_p_init(1, :), all_p_init(3, :), 50, colors, 'filled');
+    scatter(all_p_true(1, :), all_p_true(3, :), 50, colors, 'filled');
     
     xlabel('$x$ [mm]', 'FontSize', fontsize, 'Interpreter', 'latex');
     if j == 1
@@ -140,65 +133,55 @@ for j = 1:num_methods
     subtl.Layout.Tile = 12 + j;
 
     % 位置+旋转误差统计（第13-16列，第j列为第12+j个tile）
-    nexttile(subtl, 1); % 13,14,15,16
-    % hold on;
+    nexttile(subtl, 1);
 
-    % 取出该方法的所有测试点位置和旋转误差
     rot_errors = rot_error_matrix(:, j);
-
-    % 构造数据用于boxchart（横向）
-    % y: [位置误差; 旋转误差]
-    % group: 1=位置, 2=旋转
-    y = rot_errors;
     
-    boxplot(y, 'Labels', {'Rotation'}, 'Orientation', 'horizontal', 'Widths', 2);
-
-    % 设置颜色：灰色，黑色边框
-    % boxchart 会为每个类别创建一个 BoxChart 对象
-    colors = slanCM('gor', 2);
-
-    boxes = findobj(gca, 'Tag', 'Box');
-    set(boxes, 'Color', colors(1, :));
-    medians = findobj(gca, 'Tag', 'Median');
-    set(medians, 'Color', colors(2, :));  % 中位线颜色设为黑色
-
+    % 使用 boxchart（横向）
+    gc = categorical(repmat("Rotation", num_points, 1));
+    bc = boxchart(gc, rot_errors, 'BoxFaceColor', colors(1, :), 'Orientation', 'horizontal');
+    % bc.MarkerStyle = 'none';  % 不显示离群点
+    
+    % % 颜色设置
+    % bc.BoxFaceColor = colors(1, :);
+    % bc.BoxEdgeColor = 'k';
+    % bc.WhiskerLineColor = 'k';
+    % bc.MedianLineColor = colors(2, :);
+    
     if j == 1
-        yticklabels({'$e_{\mbox{\boldmath ${R}$}}$ [rad]'});
+        yticklabels('$e_{\mbox{\boldmath ${R}$}}$ [rad]');
     else
         yticklabels('');
     end
-
-    % 设置坐标轴（使用 categorical 值）
-    set(gca, 'FontSize', fontsize, 'TickDir', 'out', 'TickLabelInterpreter', 'latex', 'LineWidth', 1);
-    % xlabel('RMSE [-]', 'FontSize', fontsize, 'Interpreter', 'latex');
-    % xlim([0, 0.15]);
-    axis auto;
+    
+    set(gca, 'FontSize', fontsize, 'TickDir', 'out', ...
+             'TickLabelInterpreter', 'latex', 'LineWidth', 1);
     box on;
-
-    nexttile(subtl, 2); % 15,16
-    pos_errors = pos_error_matrix(:, j);
-    y = pos_errors;
     
-    boxplot(1e3 * y, 'Labels', {'Position'}, 'Orientation', 'horizontal');
 
-    % 设置颜色：灰色，黑色边框
-    % boxchart 会为每个类别创建一个 BoxChart 对象
-    colors = slanCM('gor', 2);
+    nexttile(subtl, 2);
 
-    boxes = findobj(gca, 'Tag', 'Box');
-    set(boxes, 'Color', colors(1, :));
-    medians = findobj(gca, 'Tag', 'Median');
-    set(medians, 'Color', colors(2, :), 'LineWidth', 1.5);  % 中位线颜色设为黑色
-
+    pos_errors = 1e3 * pos_error_matrix(:, j);  % 换成 mm
+    
+    gc = categorical(repmat("Position", num_points, 1));
+    bc = boxchart(gc, pos_errors, 'BoxFaceColor', colors(1, :), 'Orientation', 'horizontal');
+    % bc.MarkerStyle = 'none';
+    
+    % 颜色设置
+    % bc.BoxFaceColor = colors(1, :);
+    % bc.BoxEdgeColor = 'k';
+    % bc.WhiskerLineColor = 'k';
+    % bc.MedianLineColor = colors(2, :);
+    % bc.MedianLineWidth = 1.5;
+    
     if j == 1
-        yticklabels({'$e_{\mbox{\boldmath ${p}$}}$ [mm]'});
+        yticklabels('$e_{\mbox{\boldmath ${p}$}}$ [mm]');
     else
         yticklabels('');
     end
-
-    % 设置坐标轴（使用 categorical 值）
-    set(gca, 'FontSize', fontsize, 'TickDir', 'out', 'TickLabelInterpreter', 'latex', 'LineWidth', 1);
-    axis auto;
+    
+    set(gca, 'FontSize', fontsize, 'TickDir', 'out', ...
+             'TickLabelInterpreter', 'latex', 'LineWidth', 1);
     box on;
 
 end

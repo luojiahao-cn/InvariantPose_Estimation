@@ -1,4 +1,4 @@
-function [R_opt1, R_opt2] = estimateR(b_bar, B_bar, A_p, X)
+function [R_opt1, R_opt2] = estimateR(b_bar, B_bar, A_p, X, D_delta, B_delta)
     % 估计 R 使 R^T A R = X ，仅返回主解 R_opt1
     
     % --- 强制对称（数值上更稳） ---
@@ -30,6 +30,7 @@ function [R_opt1, R_opt2] = estimateR(b_bar, B_bar, A_p, X)
         Y = P;
         R_cand = PA * Y * PX';
         cost = norm(R_cand' * A_p * R_cand - X, 'fro')^2;
+        % cost = norm(R_cand' * A_p * R_cand * D_delta - B_delta, 'fro')^2;
     
         if cost < bestCost
             bestCost = cost;

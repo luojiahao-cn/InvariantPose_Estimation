@@ -16,7 +16,7 @@ function [p_est, R_est, stats] = estimate_pose_ours(b_total, d_list, m_pos, m_ha
 R_init = MatrixExp3(VecToso3(theta_init));
 num_sensors = size(b_total, 2);
 %% 构建磁场差矩阵和位移矩阵
-X_opt = lc_grad_tensor_estimator(b_total, d_list);
+[X_opt, ~, D_delta, B_delta] = lc_grad_tensor_estimator(b_total, d_list);
 
 %% Stage #1: Estimate for position \hat{p}
 [Q, ~] = qr(d_list');
@@ -24,21 +24,23 @@ r = rank(d_list); % 构型判据
 Q_bar = Q(:, r+1:end);
 b_bar = b_total * Q_bar; % 计算bBar
 
+fun22 = @(p) obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt);
 % 粗搜索+精搜索
-p_est = grid_search(p_init, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt, lb_p, ub_p);
-% p_est = p_init;
-% fun22 = @(p) obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt);
-% p_est = lsqnonlin(fun22, p_est, lb_p, ub_p, options);
+% p_est = grid_search(p_init, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt, lb_p, ub_p);
+p_est = p_init;
+% options.FunctionTolerance = 1e-8;
+[p_est, ~, ~, ~, output] = lsqnonlin(fun22, p_est, lb_p, ub_p, options);
 % output.message
 %% Stage #2: Estimate for rotation \hat{R}
 [b_p, A_p] = calcFieldAndGradient(p_est, m_pos, m_hat, m_norm);
 B_matrix = b_p * ones(1, num_sensors);
 B_bar = B_matrix * Q_bar;
-[R_init_est1, R_init_est2] = estimateR(b_bar, B_bar, A_p, X_opt);
+[R_init_est1, R_init_est2] = estimateR(b_bar, B_bar, A_p, X_opt, D_delta, B_delta);
 
-mu = 1e2;
-beta = 1e3;
-R_PPI = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init_est1, mu, beta, params.R_true); % using R_init
+mu = 1e1;
+beta = 1e2;
+% 应该要以权重项为基准
+R_PPI = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu, beta, params.R_true); % using R_init
 
 R_est = R_PPI.R;
 stats.X_opt = X_opt;         % 估计的梯度矩阵
@@ -53,18 +55,16 @@ end
 function res = obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X)
     [b_p, A_p] = calcFieldAndGradient(p, m_pos, m_hat, m_norm);
     term1 = norm(b_p * ones(1, num_sensors) * Q_bar, 'fro') - norm(b_bar, 'fro');
-    % term2 = trace(A_p*A_p) - trace(X*X);
-    % term3 = det(A_p) - det(X);
-    term5 = sort(eig(A_p), 'ascend') - sort(eig(X), 'ascend'); % 特征值匹配
-    res = [term1; term5];
+    term5 = sort(eig(A_p), 'descend') - sort(eig(X), 'descend'); % 特征值匹配
+    res = [1e-3 * term1; term5]; % 只需要匹配最大的两个特征值，因为迹0
     % res = [term1; term2; term5];
 end
 
 %% 网格粗搜索
 function p_est = grid_search(p_init, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt, lb_p, ub_p)
     % 解析 options
-    epsilon       = 0.3;
-    grid_step     = 0.04;
+    epsilon       = 0.1;
+    grid_step     = 0.015;
     num_iter      = 4;
     shrink_factor = 1.4;
 

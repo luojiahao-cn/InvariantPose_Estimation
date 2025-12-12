@@ -36,12 +36,13 @@ d_list3 = d_list3 - dc3;
 d_list4 = [[d0; 0; 0],...
     [0; d0; 0],...
     [0; 0; d0]];
-dc4 = [0; 0; 0];
+% dc4 = [0; 0; 0];
+dc4 = mean(d_list4, 2);
 d_list4 = d_list4 - dc4;
 
 %% ========== 参数配置 ==========
 params = get_experiment_params();
-params.sensor.d_list = d_list2;
+params.sensor.d_list = d_list3;
 % 设置随机种子
 rng(params.experiment.random_seed);
 
@@ -67,7 +68,7 @@ analyze_batch_results(batch_results);
 %% ========== 结果可视化 ==========
 plot_batch_results(batch_results);
 
-plot_init_results(batch_results);
+% plot_init_results(batch_results);
 
 % %% ========== 保存结果 ==========
 % save('results/exp1_batch_results.mat', 'batch_results', 'test_points', 'params');

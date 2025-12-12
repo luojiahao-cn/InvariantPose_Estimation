@@ -6,6 +6,7 @@ function R_struct = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu, beta, R
     Abar = A_p - LA * eye(3);
     Xbar = X_opt - LX * eye(3);
 
+    % L = 4 * norm(Abar) * norm(Xbar) / ( norm(b_bar) * norm(B_bar) );
     L = 4 * norm(Abar) * norm(Xbar);
     % beta = beta * L;
     mu = mu * L;

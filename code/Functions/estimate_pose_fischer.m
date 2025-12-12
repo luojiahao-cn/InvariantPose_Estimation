@@ -85,8 +85,8 @@ function [p_est, R_est, stats] = estimate_pose_fischer( ...
     invariants_meas = [norm_b_meas; norm_G_meas; lambda_s];
 
     %% 解析 options
-    epsilon       = 0.3;
-    grid_step     = 0.02;
+    epsilon       = 0.1; % 0.3
+    grid_step     = 0.02; % 0.02
     num_iter      = 4;
     shrink_factor = 1.4;
 

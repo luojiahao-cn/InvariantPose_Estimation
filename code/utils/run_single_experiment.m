@@ -36,6 +36,7 @@ u(3) = abs(u(3));
 u = u / norm(u);      % 单位向量
 r = (rand())^(1/3) * p_uncertainty;  % 半径分布
 p_init = p_true + r * u;
+% p_init = [0; 0; 0];
 
 % theta_init = theta_true + r_uncertainty * init_error;
 % theta_init的随机初始化，基于真实theta_true和r_uncertainty，采用旋转向量扰动
@@ -43,6 +44,7 @@ u_theta = randn(3,1);
 u_theta = u_theta / norm(u_theta);
 r_theta = (rand())^(1/3) * r_uncertainty;
 theta_init = theta_true + r_theta * u_theta;
+% theta_init = [0; 0; 0];
 % 这里的theta_init为旋转向量（轴角），后续调用算法时将通过MatrixExp3(VecToso3(theta_init))转成旋转矩阵
 
 fprintf('theta_init = [%.4f, %.4f, %.4f]\n', theta_init(1), theta_init(2), theta_init(3));
