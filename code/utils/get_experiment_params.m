@@ -61,9 +61,9 @@ params.optimization.options = optimoptions('lsqnonlin', ...
     'Algorithm', 'levenberg-marquardt', ...
     'Display', 'off'); % default: 1e-6  % 全都是default值
 
-params.optimization.mu = 1;   % 所提算法的mu参数
+params.optimization.mu = 1e1;   % 所提算法的mu参数
 params.optimization.beta = 1e2;   % 所提算法的beta参数
-
+params.optimization.W = diag([1e-4, 1, 1]);
 %% 工作空间约束参数
 params.workspace.center = [0; 0; 0];
 params.workspace.radius = 0.15;

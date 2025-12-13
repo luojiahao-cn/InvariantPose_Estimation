@@ -24,7 +24,7 @@ r = rank(d_list); % 构型判据
 Q_bar = Q(:, r+1:end);
 b_bar = b_total * Q_bar; % 计算bBar
 
-fun22 = @(p) obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt);
+fun22 = @(p) obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt, params.W);
 % 粗搜索+精搜索
 % p_est = grid_search(p_init, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt, lb_p, ub_p);
 p_est = p_init;
@@ -37,10 +37,9 @@ B_matrix = b_p * ones(1, num_sensors);
 B_bar = B_matrix * Q_bar;
 [R_init_est1, R_init_est2] = estimateR(b_bar, B_bar, A_p, X_opt, D_delta, B_delta);
 
-mu = 1e1;
 beta = 1e2;
 % 应该要以权重项为基准
-R_PPI = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, mu, beta, params.R_true); % using R_init
+R_PPI = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, params.mu, beta, params.R_true); % using R_init
 
 R_est = R_PPI.R;
 stats.X_opt = X_opt;         % 估计的梯度矩阵
@@ -52,12 +51,13 @@ end
 
 %% ----------------------------Functions-------------------------------  %%
 %% Estimate p
-function res = obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X)
+function res = obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X, W)
     [b_p, A_p] = calcFieldAndGradient(p, m_pos, m_hat, m_norm);
     term1 = norm(b_p * ones(1, num_sensors) * Q_bar, 'fro') - norm(b_bar, 'fro');
     term5 = sort(eig(A_p), 'descend') - sort(eig(X), 'descend'); % 特征值匹配
-    res = [1e-3 * term1; term5]; % 只需要匹配最大的两个特征值，因为迹0
+    res = [term1; term5(1:2)]; % 只需要匹配最大的两个特征值，因为迹0
     % res = [term1; term2; term5];
+    res = W * res;
 end
 
 %% 网格粗搜索
