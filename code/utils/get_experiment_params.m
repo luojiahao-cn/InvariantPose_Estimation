@@ -49,7 +49,7 @@ params.sensor.d_list = [
     [0; 0; -1e-3]
     ];
 %% 默认真实位姿
-params.ground_truth.theta_true = [0; 0; 0]; % 真实旋转向量 [rad] % 不是致命原因
+params.ground_truth.theta_true = [1; 1; 1]; % 真实旋转向量 [rad] % 不是致命原因
 params.ground_truth.p_true = [0; 0; 0]; % 传感器阵列参考点真实位置 [m]
 %% 不确定性参数
 params.uncertainty.p_uncertainty = 0.15; % 位置不确定性

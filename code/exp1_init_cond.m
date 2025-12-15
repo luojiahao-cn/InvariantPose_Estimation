@@ -41,7 +41,7 @@ d_list4 = d_list4 - dc4;
 
 %% ========== 参数配置 ==========
 params = get_experiment_params();
-params.sensor.d_list = d_list1;
+params.sensor.d_list = d_list4;
 % 设置随机种子
 rng(params.experiment.random_seed);
 
@@ -62,7 +62,7 @@ fprintf('已生成 %d 个测试点\n', num_test_points);
 batch_results = run_batch_experiments(params, test_points, num_trials_per_point);
 
 %% ========== 结果分析 ==========
-analyze_batch_results(batch_results);
+% analyze_batch_results(batch_results);
 
 %% ========== 结果可视化 ==========
 % plot_batch_results(batch_results);
