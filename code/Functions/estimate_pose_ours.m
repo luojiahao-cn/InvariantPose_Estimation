@@ -53,11 +53,11 @@ end
 function res = obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X)
     [b_p, A_p] = calcFieldAndGradient(p, m_pos, m_hat, m_norm);
     term1 = norm(b_p * ones(1, num_sensors) * Q_bar, 'fro') - norm(b_bar, 'fro');
-    % term2 = trace(A_p*A_p) - trace(X*X);
-    % term3 = det(A_p) - det(X);
+    term2 = trace(A_p*A_p) - trace(X*X);
+    term3 = det(A_p) - det(X);
     term5 = sort(eig(A_p), 'ascend') - sort(eig(X), 'ascend'); % 特征值匹配
-    res = [term1; term5];
-    % res = [term1; term2; term5];
+    % res = [term1; term5(1:2)];
+    res = [term1; term2; term3];
 end
 
 %% 网格粗搜索
