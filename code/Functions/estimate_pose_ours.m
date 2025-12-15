@@ -53,18 +53,18 @@ end
 function res = obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X)
     [b_p, A_p] = calcFieldAndGradient(p, m_pos, m_hat, m_norm);
     term1 = norm(b_p * ones(1, num_sensors) * Q_bar, 'fro') - norm(b_bar, 'fro');
-    term2 = trace(A_p*A_p) - trace(X*X);
-    term3 = det(A_p) - det(X);
+    % term2 = trace(A_p*A_p) - trace(X*X);
+    % term3 = det(A_p) - det(X);
     term5 = sort(eig(A_p), 'ascend') - sort(eig(X), 'ascend'); % 特征值匹配
     % res = [1e-4 * term1; term5];
-    res = [term1; term2; term3; term5];
+    res = [term1; term5];
 end
 
 %% 网格粗搜索
 function p_est = grid_search(p_init, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt, lb_p, ub_p)
     % 解析 options
-    epsilon       = 0.30;
-    grid_step     = 0.02;
+    epsilon       = 0.3;
+    grid_step     = 0.05;
     num_iter      = 4;
     shrink_factor = 1.4;
 
@@ -94,6 +94,7 @@ function p_est = grid_search(p_init, m_pos, m_hat, m_norm, num_sensors, b_bar, Q
 
         [Xg, Yg, Zg] = ndgrid(x_grid, y_grid, z_grid);
         P_grid = [Xg(:), Yg(:), Zg(:)];
+        % P_grid = [P_grid; [0, 0, 0]];
 
         for k = 1:size(P_grid, 1)
             p = P_grid(k, :)';

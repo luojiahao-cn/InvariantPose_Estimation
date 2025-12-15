@@ -86,7 +86,7 @@ function [p_est, R_est, stats] = estimate_pose_fischer( ...
 
     %% 解析 options
     epsilon       = 0.3;
-    grid_step     = 0.04;
+    grid_step     = 0.05;
     num_iter      = 4;
     shrink_factor = 1.4;
 
@@ -113,6 +113,7 @@ function [p_est, R_est, stats] = estimate_pose_fischer( ...
 
         [Xg, Yg, Zg] = ndgrid(x_grid, y_grid, z_grid);
         P_grid = [Xg(:), Yg(:), Zg(:)];
+        % P_grid = [P_grid; [0, 0, 0]];
 
         for k = 1:size(P_grid, 1)
             p = P_grid(k, :)';
