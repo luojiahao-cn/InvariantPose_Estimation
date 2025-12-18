@@ -3,17 +3,15 @@ clc; clear; close all;
 addpath('./utils')
 addpath('./Functions')
 addpath('./tools')
+
 %% ========== 参数配置 ==========
 params = get_experiment_params();
-
 % 设置随机种子
 rng(params.experiment.random_seed);
 
 %% ========== 生成测试点 ==========
-% 生成100个测试点（p_true 和 theta_true 的组合）
 num_test_points = 300;  % 测试点数量
 num_trials_per_point = 1;  % 每个测试点的实验次数（用于测试不同初始值）
-
 % 生成方法选项：
 %   'random': 在工作空间内随机生成
 %   'grid': 在工作空间内网格采样

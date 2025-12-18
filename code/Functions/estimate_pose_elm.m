@@ -78,21 +78,8 @@ function residuals = elm_objective(x, m_pos, m_hat, m_norm, d_list, delta_d, del
         p_i = p + R * d_list(:, i);
         p_j = p + R * d_list(:, j);
         
-        % 计算在p_i处的磁场（全局坐标系）
-        B_i = zeros(3,1);
-        for k = 1:size(m_pos,2)
-            r_i = p_i - m_pos(:, k);
-            [B_single, ~] = dipole_b_and_gradb(r_i, m_hat(:,k), m_norm(k));
-            B_i = B_i + B_single;
-        end
-        
-        % 计算在p_j处的磁场（全局坐标系）
-        B_j = zeros(3,1);
-        for k = 1:size(m_pos,2)
-            r_j = p_j - m_pos(:, k);
-            [B_single, ~] = dipole_b_and_gradb(r_j, m_hat(:,k), m_norm(k));
-            B_j = B_j + B_single;
-        end
+        [B_i, ~] = calcFieldAndGradient(p_i, m_pos, m_hat, m_norm);
+        [B_j, ~] = calcFieldAndGradient(p_j, m_pos, m_hat, m_norm);
         
         % 转换到局部坐标系
         b_i = R' * B_i;
