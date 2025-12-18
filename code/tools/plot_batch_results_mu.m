@@ -106,7 +106,7 @@ for d = 1:num_dlist
     end
 end
 
-xlabel(ax2, '$\log_{10}(\mu)$', 'Interpreter', 'latex', 'FontSize', fontsize);
+xlabel(ax2, '$\log_{10}(\mu/L)$', 'Interpreter', 'latex', 'FontSize', fontsize);
 ylabel(ax2, '$e_{\mbox{\boldmath{$R$}}}$ [rad]', 'Interpreter', 'latex', 'FontSize', fontsize);
 set(ax2, 'FontSize', fontsize, 'LineWidth', 1);
 grid(ax2, 'on');
