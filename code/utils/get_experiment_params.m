@@ -54,14 +54,14 @@ params.ground_truth.p_true = [0; 0; 0]; % 传感器阵列参考点真实位置 [
 %% 不确定性参数
 params.uncertainty.p_uncertainty = 0.02; % 位置不确定性
 params.uncertainty.r_uncertainty = 0.5;  % 旋转不确定性
-params.uncertainty.disturbance_strength = [5e-4; 5e-4; 5e-4];  % 扰动强度
-params.uncertainty.noise_strength = 1e-4;  % 噪声强度
+params.uncertainty.disturbance_strength = 0e-4*ones(3,1);  % 扰动强度
+params.uncertainty.noise_strength = 0e-4;  % 噪声强度
 %% 优化算法参数
 params.optimization.options = optimoptions('lsqnonlin', ...
     'Algorithm', 'levenberg-marquardt', ...
     'Display', 'off'); % default: 1e-6  % 全都是default值
 
-params.optimization.mu = 1e1;   % 所提算法的mu参数
+params.optimization.mu = 1e2;   % 所提算法的mu参数
 params.optimization.beta = 1e2;   % 所提算法的beta参数
 params.optimization.W = diag([1e-4, 1, 1]);
 %% 工作空间约束参数

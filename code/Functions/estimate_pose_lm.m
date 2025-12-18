@@ -73,7 +73,13 @@ function residuals = lm_objective(x, m_pos, m_hat, m_norm, d_list, b_list)
         p_sensor_i = p + R * d_list(:, i);
         
         % 计算该位置的总磁场（全局坐标系）
-        [B_global, ~] = calcFieldAndGradient(p_sensor_i, m_pos, m_hat, m_norm);
+        B_global = zeros(3,1);
+        num_magnets = size(m_pos,2);
+        for j = 1:num_magnets
+            r = p_sensor_i - m_pos(:, j);
+            [B_single, ~] = dipole_b_and_gradb(r, m_hat(:,j), m_norm(j));
+            B_global = B_global + B_single;
+        end
         
         % 将全局磁场转换到传感器局部坐标系
         b_pred = R' * B_global;

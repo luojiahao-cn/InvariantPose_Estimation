@@ -24,7 +24,7 @@ fprintf('已生成 %d 个测试点\n', num_test_points);
 batch_results = run_batch_experiments(params, test_points, num_trials_per_point);
 
 %% ========== 结果分析 ==========
-analyze_batch_results(batch_results);
+% analyze_batch_results(batch_results);
 
 %% ========== 结果可视化 ==========
 plot_batch_results(batch_results);

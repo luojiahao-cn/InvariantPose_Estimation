@@ -1,6 +1,6 @@
-function [p_est, R_est, stats] = estimate_pose_ours2(b_total, d_list, m_pos, m_hat, m_norm, p_init, R_init, R_true, p_true, options, lb_p, ub_p, varargin)
+function [p_est, R_est, stats] = estimate_pose_ours(b_total, d_list, m_pos, m_hat, m_norm, p_init, R_init, R_true, p_true, options, lb_p, ub_p, varargin)
 % PROPOSED_METHOD_POSE_ESTIMATION 使用所提方法估计传感器姿态（位置和方向）
-% 该方法并没有使用Xopt来进行R的恢复
+% 该方法使用公式(4)
 % 输入参数：
 %   b_total  - 3×N传感器测量矩阵（局部坐标系），单位：T
 %   d_list   - 3×N位移矩阵，传感器在参考坐标系中的偏移，单位：m
