@@ -11,16 +11,32 @@ function params = get_experiment_params()
 %     - experiment: 实验设置参数
 
 %% 默认磁铁参数
-params.magnet.m_pos = [
-    [-0.1125;0.0002;0.3099], ...
-    [0.1125;0.0002;0.3099]
-    ];
+% params.magnet.m_pos = [
+%     [-0.1125;0.0002;0.3099], ...
+%     [0.1125;0.0002;0.3099]
+%     ];
+% params.magnet.m_hat = [
+%     [-0.2588;0;0.9659], ...
+%     [0.2588;0;0.9659]
+%     ];
+% params.magnet.m_hat = [
+%     [-sin(1/12*pi);0;cos(1/12*pi)], ...
+%     [sin(1/12*pi);0;cos(1/12*pi)] % 1/12*pi
+%     ];
+% params.magnet.m_pos = [
+%     [-0.1; 2e-4; 0.3],...
+%     [0.1; 2e-4; 0.3],...
+%     ]; % 保证测量结果至少为32Gs，添加一点偏置来打破对称性
 params.magnet.m_hat = [
-    [-0.2588;0;0.9659], ...
-    [0.2588;0;0.9659]
+    [-sin(1/12*pi);0;cos(1/12*pi)], ...
+    [sin(1/12*pi);0;cos(1/12*pi)] % 1/12*pi
     ];
+params.magnet.m_pos = [
+    [-0.1; 2e-4; 0.3],...
+    [0.1; 2e-4; 0.3],...
+    ]; % 保证测量结果至少为32Gs，添加一点偏置来打破对称性
+params.magnet.m_norm = [500, 500];
 params.magnet.m_hat = params.magnet.m_hat ./ vecnorm(params.magnet.m_hat);
-params.magnet.m_norm = [300, 300];
 
 %% 默认传感器参数
 params.sensor.d_list = [
@@ -28,30 +44,31 @@ params.sensor.d_list = [
     [1e-3; 0; 0], ...
     [-1e-3; 0; 0], ...
     [0; 1e-3; 0], ...
-    [0; -1e-3; 0], ...
+    [0; -1e-3; 0], ...2
     [0; 0; 1e-3], ...
     [0; 0; -1e-3]
     ];
 %% 默认真实位姿
-params.ground_truth.theta_true = [0; 0; 1]; % 真实旋转向量 [rad]
+params.ground_truth.theta_true = [1; 1; 1]; % 真实旋转向量 [rad] % 不是致命原因
 params.ground_truth.p_true = [0; 0; 0]; % 传感器阵列参考点真实位置 [m]
 %% 不确定性参数
-params.uncertainty.p_uncertainty = 0.05; % 位置不确定性
-params.uncertainty.r_uncertainty = 0.1;  % 旋转不确定性
-
+params.uncertainty.p_uncertainty = 0.02; % 位置不确定性
+params.uncertainty.r_uncertainty = 0.5;  % 旋转不确定性
+params.uncertainty.disturbance_strength = 0e-4*ones(3,1);  % 扰动强度
+params.uncertainty.noise_strength = 0e-4;  % 噪声强度
 %% 优化算法参数
 params.optimization.options = optimoptions('lsqnonlin', ...
     'Algorithm', 'levenberg-marquardt', ...
-    'Display', 'off');
-params.optimization.mu = 1;   % 所提算法的mu参数
-params.optimization.beta = 1e-3;   % 所提算法的beta参数
+    'Display', 'off'); % default: 1e-6  % 全都是default值
 
+params.optimization.mu = 1e2;   % 所提算法的mu参数
+params.optimization.beta = 1e2;   % 所提算法的beta参数
+params.optimization.W = diag([1e-4, 1, 1]);
 %% 工作空间约束参数
 params.workspace.center = [0; 0; 0];
 params.workspace.radius = 0.15;
 
 %% 实验设置参数
-params.experiment.num_experiments = 10; % 实验次数
 params.experiment.random_seed = 2025;  % 随机种子
 
 end
