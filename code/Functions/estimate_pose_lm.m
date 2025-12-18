@@ -34,13 +34,6 @@ if num_sensors ~= size(d_list, 2)
     error('传感器测量数量(%d)和偏移数量(%d)不匹配', num_sensors, size(d_list, 2));
 end
 
-% 设置默认优化选项
-if isempty(options)
-    options = optimoptions('lsqnonlin', ...
-        'Algorithm', 'levenberg-marquardt', ...
-        'Display', 'off');
-end
-
 % 清空历史记录
 history.iter = [];
 history.resnorm = [];
