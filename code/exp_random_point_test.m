@@ -4,8 +4,14 @@ addpath('./utils')
 addpath('./Functions')
 addpath('./tools')
 
+d_list = [[0; 0; 0], ...
+    [1e-3; 0; 0], ...
+    [2e-3; 0; 0]];
+d_mean = mean(d_list, 2);
+d_list = d_list - d_mean;
 %% ========== 参数配置 ==========
 params = get_experiment_params();
+params.sensor.d_list = d_list;
 % 设置随机种子
 rng(params.experiment.random_seed);
 
