@@ -12,6 +12,7 @@ d_list = d_list - d_mean;
 %% ========== 参数配置 ==========
 params = get_experiment_params();
 params.sensor.d_list = d_list;
+params.sensor.d_list = d_list;
 % 设置随机种子
 rng(params.experiment.random_seed);
 
