@@ -6,7 +6,7 @@ addpath('./tools')
 
 d_list = [[0; 0; 0], ...
     [1e-3; 0; 0], ...
-    [2e-3; 0; 0]];
+    [0; 0; 0]];
 d_mean = mean(d_list, 2);
 d_list = d_list - d_mean;
 %% ========== 参数配置 ==========
