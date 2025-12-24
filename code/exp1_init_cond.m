@@ -41,7 +41,7 @@ d_list4 = d_list4 - dc4;
 
 %% ========== 参数配置 ==========
 params = get_experiment_params();
-params.sensor.d_list = d_list4;
+params.sensor.d_list = d_list3;
 % 设置随机种子
 rng(params.experiment.random_seed);
 
