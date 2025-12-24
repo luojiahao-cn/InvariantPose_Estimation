@@ -19,9 +19,10 @@ num_sensors = size(b_total, 2);
 [X_opt, ~, D_delta, B_delta] = lc_grad_tensor_estimator(b_total, d_list);
 
 %% Stage #1: Estimate for position \hat{p}
-[Q, ~] = qr(d_list');
+[Q, ~, ~] = qr(d_list');
 r = rank(d_list); % 构型判据
 Q_bar = Q(:, r+1:end);
+% d_list * Q_bar
 b_bar = b_total * Q_bar; % 计算bBar
 
 fun22 = @(p) obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt, params.W);
