@@ -36,7 +36,7 @@ num_sensors = size(b_total, 2);
 X_opt = lc_grad_tensor_estimator(b_total, d_list); % 估计局部梯度张量
 
 % 对d_list'进行QR分解
-[Q, ~] = qr(d_list');
+[Q, ~, ~] = qr(d_list'); % Note: must return 3 outputs even we only need Q
 r = rank(d_list); % 构型判据
 Q_bar = Q(:, r+1:end);
 b_bar = b_total * Q_bar; % 计算bBar
