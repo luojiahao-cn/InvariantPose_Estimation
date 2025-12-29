@@ -62,7 +62,7 @@ time_elm = toc;
 % 所提算法
 tic;
 alg_params = struct('R_true', R_true, 'p_true', p_true, 'mu', mu, 'beta', beta, 'W', W);
-[p_ours, R_ours, stats_ours] = estimate_pose_ours( ...
+[p_ours, R_ours, r_hat, stats_ours] = estimate_pose_ours( ...
     b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p, alg_params);
 time_ours = toc;
 
@@ -83,6 +83,7 @@ result.p_elm   = p_elm;
 result.R_elm   = R_elm;
 result.p_ours  = p_ours;
 result.R_ours  = R_ours;
+result.r_ours = r_hat;
 result.p_fischer = p_fischer;
 result.R_fischer = R_fischer;
 result.p_Rlm   = p_Rlm;
@@ -97,24 +98,32 @@ result.time_Rlm = time_Rlm;
 
 % ==== 误差分析 ====
 % LM
+r_true = R_true * [1;0;0];
+r_true = r_true / norm(r_true);
 result.lm_pos_error = norm(p_lm - p_true);
 result.lm_rot_error = norm(R_lm - R_true, 'fro');
+r_hat_lm = R_lm * [1;0;0];
+r_hat_lm = r_hat_lm / norm(r_hat_lm);
+result.lm_r_error = acos(abs(r_true' * r_hat_lm)); % 主轴方向误差
 
 % ELM
 result.elm_pos_error = norm(p_elm - p_true);
 result.elm_rot_error = norm(R_elm - R_true, 'fro');
+r_hat_elm = R_elm * [1;0;0];
+r_hat_elm = r_hat_elm / norm(r_hat_elm);
+result.elm_r_error = acos(abs(r_true' * r_hat_elm)); % 主轴方向误差
 
 % 所提算法
 result.ours_pos_error = norm(p_ours - p_true);
 result.ours_rot_error = norm(R_ours - R_true, 'fro');
+result.ours_r_error = acos(abs(r_true' * r_hat)); % 主轴方向误差
 
 % Fischer
 result.fischer_pos_error = norm(p_fischer - p_true);
 result.fischer_rot_error = norm(R_fischer - R_true, 'fro');
-
-% Rlm
-result.Rlm_pos_error = norm(p_Rlm - p_true);
-result.Rlm_rot_error = norm(R_Rlm - R_true, 'fro');
+r_hat_fischer = R_fischer * [1;0;0];
+r_hat_fischer = r_hat_fischer / norm(r_hat_fischer);
+result.fischer_r_error = acos(abs(r_true' * r_hat_fischer)); % 主轴方向误差
 
 end
 

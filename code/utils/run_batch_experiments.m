@@ -47,10 +47,11 @@ for point_idx = 1:num_test_points
     % 计算真实旋转矩阵
     R_true = MatrixExp3(VecToso3(test_points(point_idx).theta_true));
     
+
     % 对该测试点执行多次实验    
     for trial_idx = 1:num_trials_per_point
         exp_idx = (point_idx - 1) * num_trials_per_point + trial_idx;
-        results{trial_idx} = run_single_experiment(exp_idx, ...
+        results(trial_idx) = run_single_experiment(exp_idx, ...
             num_test_points * num_trials_per_point, params_current, ...
             b_total, d_list, test_points(point_idx).p_true, R_true, lb_p, ub_p);
     end
@@ -73,19 +74,20 @@ function summary = calculate_point_summary(results)
     % 提取所有误差
     lm_pos_errors = [results.lm_pos_error];
     lm_rot_errors = [results.lm_rot_error];
+    lm_r_errors = [results.lm_r_error];
     elm_pos_errors = [results.elm_pos_error];
     elm_rot_errors = [results.elm_rot_error];
+    elm_r_errors = [results.elm_r_error];
     ours_pos_errors = [results.ours_pos_error];
     ours_rot_errors = [results.ours_rot_error];
+    ours_r_errors = [results.ours_r_error];
     fischer_pos_errors = [results.fischer_pos_error];
     fischer_rot_errors = [results.fischer_rot_error];
-    Rlm_pos_errors = [results.Rlm_pos_error];
-    Rlm_rot_errors = [results.Rlm_rot_error];
+    fischer_r_errors = [results.fischer_r_error];
     time_lm = [results.time_lm];
     time_elm = [results.time_elm];
     time_ours = [results.time_ours];
     time_fischer = [results.time_fischer];
-    time_Rlm = [results.time_Rlm];
 
     % 计算统计量
     summary.lm.pos_mean = mean(lm_pos_errors);
@@ -97,6 +99,8 @@ function summary = calculate_point_summary(results)
     summary.lm.time_mean = mean(time_lm);
     summary.lm.time_std = std(time_lm);
     summary.lm.time_max = max(time_lm);
+    summary.lm.r_mean = mean(lm_r_errors);
+    summary.lm.r_std = std(lm_r_errors);
 
     summary.elm.pos_mean = mean(elm_pos_errors);
     summary.elm.pos_std = std(elm_pos_errors);
@@ -107,6 +111,8 @@ function summary = calculate_point_summary(results)
     summary.elm.time_mean = mean(time_elm);
     summary.elm.time_std = std(time_elm);
     summary.elm.time_max = max(time_elm);
+    summary.elm.r_mean = mean(elm_r_errors);
+    summary.elm.r_std = std(elm_r_errors);
 
     summary.ours.pos_mean = mean(ours_pos_errors);
     summary.ours.pos_std = std(ours_pos_errors);
@@ -117,6 +123,8 @@ function summary = calculate_point_summary(results)
     summary.ours.time_mean = mean(time_ours);
     summary.ours.time_std = std(time_ours);
     summary.ours.time_max = max(time_ours);
+    summary.ours.r_mean = mean(ours_r_errors);
+    summary.ours.r_std = std(ours_r_errors);
 
     summary.fischer.pos_mean = mean(fischer_pos_errors);
     summary.fischer.pos_std = std(fischer_pos_errors);
@@ -127,16 +135,8 @@ function summary = calculate_point_summary(results)
     summary.fischer.time_mean = mean(time_fischer);
     summary.fischer.time_std = std(time_fischer);
     summary.fischer.time_max = max(time_fischer);
-
-    summary.Rlm.pos_mean = mean(Rlm_pos_errors);
-    summary.Rlm.pos_std = std(Rlm_pos_errors);
-    summary.Rlm.pos_max = max(Rlm_pos_errors);
-    summary.Rlm.rot_mean = mean(Rlm_rot_errors);
-    summary.Rlm.rot_std = std(Rlm_rot_errors);
-    summary.Rlm.rot_max = max(Rlm_rot_errors);
-    summary.Rlm.time_mean = mean(time_Rlm);
-    summary.Rlm.time_std = std(time_Rlm);
-    summary.Rlm.time_max = max(time_Rlm);
+    summary.fischer.r_mean = mean(fischer_r_errors);
+    summary.fischer.r_std = std(fischer_r_errors);
 
 end
 

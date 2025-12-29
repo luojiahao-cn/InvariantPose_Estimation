@@ -1,4 +1,4 @@
-function [p_est, R_est, stats] = estimate_pose_ours(b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p, params)
+function [p_est, R_est, r_hat, stats] = estimate_pose_ours(b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p, params)
 % PROPOSED_METHOD_POSE_ESTIMATION 使用所提方法估计传感器姿态（位置和方向）
 % 该方法使用公式(11)
 % 输入参数：
@@ -41,6 +41,12 @@ beta = 1e2;
 % 应该要以权重项为基准
 R_PPI = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, params.mu, beta, params.R_true); % using R_init
 
+opts = struct('r0', R_init * [1;0;0]);
+[r_hat, info] = estimate_principal_axis_matlabopt(b_bar, B_bar, A_p, X_opt, opts);
+
+% r_hat
+% params.R_true * [1; 0; 0]
+
 R_est = R_PPI.R;
 stats.X_opt = X_opt;         % 估计的梯度矩阵
 stats.R_est_init1 = R_init_est1;
@@ -54,6 +60,8 @@ end
 function res = obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X, W)
     [b_p, A_p] = calcFieldAndGradient(p, m_pos, m_hat, m_norm);
     term1 = norm(b_p * ones(1, num_sensors) * Q_bar, 'fro') - norm(b_bar, 'fro');
+    % term2 = trace(A_p * A_p) - trace(X * X'); % 矩阵范数匹配
+    % term3 = det(A_p) - det(X);               % 行列式匹配
     term5 = sort(eig(A_p), 'descend') - sort(eig(X), 'descend'); % 特征值匹配
     res = [term1; term5(1:2)]; % 只需要匹配最大的两个特征值，因为迹0
     % res = [term1; term2; term5];

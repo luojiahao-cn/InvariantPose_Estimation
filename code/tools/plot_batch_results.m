@@ -26,6 +26,7 @@ for i = 1:num_points
         method = method_names{j};
         % 获取位置误差和旋转误差的均值
         pos_error_matrix(i, j) = batch_results(i).summary.(method).pos_mean;
+        r_error_matrix(i, j) = batch_results(i).summary.(method).r_mean;
         rot_error_matrix(i, j) = 2*asin(batch_results(i).summary.(method).rot_mean/(2*sqrt(2)));
         time_matrix(i, j) = batch_results(i).summary.(method).time_mean;
     end
