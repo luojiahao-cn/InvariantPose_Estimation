@@ -29,13 +29,15 @@ function params = get_experiment_params()
 %     ]; % 保证测量结果至少为32Gs，添加一点偏置来打破对称性
 params.magnet.m_hat = [
     [-sin(1/12*pi);0;cos(1/12*pi)], ...
-    [sin(1/12*pi);0;cos(1/12*pi)] % 1/12*pi
+    [sin(1/12*pi);0;cos(1/12*pi)],...
+    [0; sin(1/12*pi); cos(1/12*pi)]
     ];
 params.magnet.m_pos = [
     [-0.1; 2e-4; 0.3],...
     [0.1; 2e-4; 0.3],...
+    [0; -0.1; 0.3]
     ]; % 保证测量结果至少为32Gs，添加一点偏置来打破对称性
-params.magnet.m_norm = [500, 500];
+params.magnet.m_norm = [500, 500, 500];
 params.magnet.m_hat = params.magnet.m_hat ./ vecnorm(params.magnet.m_hat);
 
 %% 默认传感器参数
