@@ -26,7 +26,7 @@ b_bar = b_total * Q_bar; % 计算bBar
 
 fun22 = @(p) obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt, params.W);
 % 粗搜索+精搜索
-% p_est = grid_search(p_init, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt, lb_p, ub_p);
+% p_est = grid_search(p_init, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt, lb_p, ub_p, params.W);
 p_est = p_init;
 % options.FunctionTolerance = 1e-8;
 [p_est, ~, ~, ~, output] = lsqnonlin(fun22, p_est, lb_p, ub_p, options);
@@ -37,9 +37,8 @@ B_matrix = b_p * ones(1, num_sensors);
 B_bar = B_matrix * Q_bar;
 [R_init_est1, R_init_est2] = estimateR(b_bar, B_bar, A_p, X_opt, D_delta, B_delta);
 
-beta = 1e2;
 % 应该要以权重项为基准
-R_PPI = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, params.mu, beta, params.R_true); % using R_init
+R_PPI = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, params.mu, params.beta, params.R_true); % using R_init
 
 R_est = R_PPI.R;
 stats.X_opt = X_opt;         % 估计的梯度矩阵
@@ -61,11 +60,11 @@ function res = obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X, 
 end
 
 %% 网格粗搜索
-function p_est = grid_search(p_init, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt, lb_p, ub_p)
+function p_est = grid_search(p_init, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt, lb_p, ub_p, W)
     % 解析 options
     epsilon       = 0.1;
-    grid_step     = 0.015;
-    num_iter      = 4;
+    grid_step     = 0.002;
+    num_iter      = 3;
     shrink_factor = 1.4;
 
     % 粗到细网格搜索估计位置
@@ -95,7 +94,7 @@ function p_est = grid_search(p_init, m_pos, m_hat, m_norm, num_sensors, b_bar, Q
         for k = 1:size(P_grid, 1)
             p = P_grid(k, :)';
 
-            cost = norm(obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt));
+            cost = norm(obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X_opt, W));
             if cost < cost_prev
                 cost_prev = cost;
                 p_est     = p;

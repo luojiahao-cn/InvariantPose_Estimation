@@ -86,8 +86,8 @@ function [p_est, R_est, stats] = estimate_pose_fischer( ...
 
     %% 解析 options
     epsilon       = 0.1; % 0.3
-    grid_step     = 0.02; % 0.02
-    num_iter      = 4;
+    grid_step     = 0.002; % 0.02
+    num_iter      = 3;
     shrink_factor = 1.4;
 
     %% 粗到细网格搜索估计位置

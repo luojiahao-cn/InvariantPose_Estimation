@@ -1,4 +1,4 @@
-function batch_results = run_batch_experiments(params, test_points, num_trials_per_point)
+function batch_results = run_batch_experiments(params, test_points, num_trials_per_point, b_total)
 % RUN_BATCH_EXPERIMENTS 批量执行实验（多个测试点，每个测试点多次实验）
 % 输入：
 %   params            - 实验参数结构体
@@ -20,11 +20,7 @@ fprintf('总实验次数: %d\n\n', num_test_points * num_trials_per_point);
 
 % 提取常用参数
 d_list = params.sensor.d_list;
-workspace_center = params.workspace.center;
 workspace_radius = params.workspace.radius;
-lb_p = workspace_center - workspace_radius;
-lb_p(3) = 0;
-ub_p = workspace_center + workspace_radius;
 
 % 遍历每个测试点
 for point_idx = 1:num_test_points
@@ -39,17 +35,12 @@ for point_idx = 1:num_test_points
     params_current.ground_truth.p_true = test_points(point_idx).p_true;
     params_current.ground_truth.theta_true = test_points(point_idx).theta_true;
     
-    % 为当前测试点生成磁场数据
-    [b_total, ~, ~, ~, ~] = generate_magnetic_data(params_current);
-    % 静磁场下LM就炸了
-    b_total = b_total + kron(params_current.uncertainty.disturbance_strength, ones(1, size(params_current.sensor.d_list, 2))); % add noise to the magnetic field data
-    
     % 计算真实旋转矩阵
     R_true = MatrixExp3(VecToso3(test_points(point_idx).theta_true));
     
     % 对该测试点执行多次实验
     % 预先初始化结果结构体数组，确保字段一致
-    results = struct('p_lm', [], 'R_lm', [], 'p_elm', [], 'R_elm', [],...
+    results_template = struct('p_lm', [], 'R_lm', [], 'p_elm', [], 'R_elm', [],...
      'p_ours', [], 'R_ours', [], 'p_Rlm', [], 'R_Rlm', [],...
       'lm_pos_error', [], 'lm_rot_error', [],...
        'elm_pos_error', [], 'elm_rot_error', [], ... 
@@ -59,11 +50,20 @@ for point_idx = 1:num_test_points
         'p_fischer', [], 'R_fischer', [], 'fischer_pos_error', [], 'fischer_rot_error', [],...
         'time_lm', [], 'time_elm', [], 'time_ours', [], 'time_fischer', [], 'time_Rlm', []);
     
+    % 预分配结构体数组以支持 parfor 并行计算
+    results = repmat(results_template, 1, num_trials_per_point);
+    
+    % 提取常量变量以优化 parfor 性能（避免在循环中重复检索）
+    total_experiments_count = num_test_points * num_trials_per_point;
+    p_true_current = test_points(point_idx).p_true;
+
     for trial_idx = 1:num_trials_per_point
-        exp_idx = (point_idx - 1) * num_trials_per_point + trial_idx;
-        results(trial_idx) = run_single_experiment(exp_idx, ...
-            num_test_points * num_trials_per_point, params_current, ...
-            b_total, d_list, test_points(point_idx).p_true, R_true, lb_p, ub_p);
+        current_exp_idx = (point_idx - 1) * num_trials_per_point + trial_idx;
+        lb_p = p_true_current - workspace_radius;
+        ub_p = p_true_current + workspace_radius;
+        results(trial_idx) = run_single_experiment(current_exp_idx, ...
+            total_experiments_count, params_current, ...
+            b_total(:, [2 6 11], trial_idx), d_list, p_true_current, R_true, lb_p, ub_p);
     end
 
     % 沿着num_trials_per_point计算平均

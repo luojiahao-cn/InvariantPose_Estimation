@@ -1,5 +1,5 @@
-function plot_batch_results(batch_results, ideal_path, params)
-% PLOT_BATCH_RESULTS 绘制批量实验结果 (支持路径自动分段高亮)
+function plot_batch_results_text(batch_results, ideal_path, params)
+% PLOT_BATCH_RESULTS_TEXT 绘制批量实验结果 (误差信息以文本形式置于标题中)
 % 输入：
 %   batch_results - 由 run_batch_experiments 返回的批量结果结构体数组
 %   ideal_path    - 3xN 矩阵，包含 NaN 间隔的理想坐标
@@ -17,7 +17,7 @@ all_p_true = [all_coords.p_true];
 
 % 自动分段逻辑
 bin_indices = ones(1, num_points);
-num_segments = 6;
+num_segments = 1;
 
 try
     data_path = fullfile(fileparts(mfilename('fullpath')), '..', 'exp', 'path_ind.mat');
@@ -34,23 +34,11 @@ try
                     bin_indices(curr_ptr:curr_ptr+L-1) = k;
                     curr_ptr = curr_ptr + L;
                 end
-                fprintf('[plot_batch_results] 成功按元数据分组: %s\n', mat2str(lengths));
+                fprintf('[plot_batch_results_text] 成功按元数据分组: %s\n', mat2str(lengths));
             end
         end
     end
 catch
-end
-
-% 如果未匹配，尝试从 ideal_path 段数推断
-if num_segments == 1 && ~isempty(ideal_path)
-    nan_count = sum(isnan(ideal_path(1, :)));
-    if nan_count > 0
-        num_segments = nan_count + 1;
-        pts_per = floor(num_points / num_segments);
-        for k = 1:num_segments
-            bin_indices((k-1)*pts_per+1 : min(k*pts_per, num_points)) = k;
-        end
-    end
 end
 
 % 计算全局误差用于颜色映射 (Colormap)
@@ -64,7 +52,7 @@ for i = 1:num_points
     end
 end
 
-% 归一化综合误差到[0,1]
+% 归一化综合误差到[0,1] 用于颜色显示
 delta = 2;
 rot_err_clamped = rot_error_matrix;
 rot_err_clamped(rot_err_clamped > delta) = delta;
@@ -78,15 +66,11 @@ else
 end
 
 %% 2. 绘制分段图
-% 如果只有一段，则绘制 Overview，否则逐个分段绘制
 if num_segments == 1
     render_one_figure('Overview', batch_results, ideal_path, error_norm, ...
                      pos_error_matrix, rot_error_matrix, bin_indices, [], params);
 else
-    % 如果是 8 段，自动赋予 MAGNETIC 标识
     mag_labels = 'MAGNETIC';
-    
-    % 如果只想绘制部分字符（例如只画 MAGNET），可将 1:num_segments 改为 1:6
     for k = 1:num_segments
         if num_segments == 8
             tag = mag_labels(k);
@@ -109,7 +93,7 @@ function render_one_figure(title_tag, batch_results, ideal_path, error_norm, ...
     method_labels = {'Ours', '(1)', '(4)', 'Fischer'};
     all_coords = [batch_results.test_point];
     all_p_true = [all_coords.p_true];
-    fontsize = 16;
+    fontsize = 14;
     n_colors = 256;
     custom_colormap = slanCM('gor', n_colors);
 
@@ -122,23 +106,20 @@ function render_one_figure(title_tag, batch_results, ideal_path, error_norm, ...
     end
 
     fig_name = sprintf('Results: %s', title_tag);
-    fig_handle = figure('Color', 'white', 'units', 'centimeters', 'Position', 2*[0, 0, 18.2, 4.5], 'Name', fig_name);
-    tl = tiledlayout(3, num_methods, 'TileSpacing', 'loose', 'Padding', 'tight');
-    
-    % 添加全局标题 (简洁标识)
-    % title(tl, sprintf('Char: %s | Ns: %d', title_tag, n_sensors), ...
-    %       'FontSize', fontsize+2, 'FontWeight', 'bold', 'Interpreter', 'latex');
+    % 减少高度，因为去掉了 boxcharts
+    fig_handle = figure('Color', 'white', 'units', 'centimeters', 'Position', [2, 2, 28, 7.5], 'Name', fig_name);
+    tl = tiledlayout(1, num_methods, 'TileSpacing', 'compact', 'Padding', 'tight');
     
     % --- 绘制 3D 散点图 ---
     for j = 1:num_methods
-        nexttile(j, [2, 1]);
+        nexttile;
         hold on; grid on; box on;
         
-        % 1. 绘制空间网格参考点 (极高透明度，增强体积感)
+        % 1. 绘制空间参考
         [gx, gy, gz] = meshgrid(linspace(-0.1, 0.1, 10));
         scatter3(gx(:), gy(:), gz(:), 2, [0.8 0.8 0.8], 'filled', 'MarkerFaceAlpha', 0.05);
 
-        % 2. 绘制理想路径 (分段处理：当前字母蓝色，其他字母灰色)
+        % 2. 绘制理想路径
         if ~isempty(ideal_path)
             nan_locs = find(isnan(ideal_path(1, :)));
             start_i = 1;
@@ -148,11 +129,11 @@ function render_one_figure(title_tag, batch_results, ideal_path, error_norm, ...
                     seg = ideal_path(:, start_i:end_i);
                     is_main = (~isempty(highlight_idx) && s == highlight_idx);
                     if is_main
-                        l_color = [0 0.4470 0.7410 0.6]; % 主层深蓝
-                        l_width = 2.0;
+                        l_color = [0 0.4470 0.7410 0.6];
+                        l_width = 1.8;
                     else
-                        l_color = [0.8 0.8 0.8 0.15];  % 其他层淡灰
-                        l_width = 1.2;
+                        l_color = [0.8 0.8 0.8 0.1];
+                        l_width = 1.0;
                     end
                     plot3(seg(1, :), seg(2, :), seg(3, :), '-', 'Color', l_color, 'LineWidth', l_width);
                 end
@@ -160,12 +141,27 @@ function render_one_figure(title_tag, batch_results, ideal_path, error_norm, ...
             end
         end
         
-        % 3. 统计并准备散点数据
+        % 3. 筛选与准备数据
+        if ~isempty(highlight_idx)
+            mask = (bin_indices == highlight_idx);
+        else
+            mask = true(1, num_points);
+        end
+        
+        % 计算当前段的统计信息 (ep 取 mm, er 取 rad)
+        curr_p_errs_mm = 1e3 * pos_err_mat(mask, j);
+        curr_r_errs_rad = rot_err_mat(mask, j);
+        
+        mu_p = mean(curr_p_errs_mm);
+        std_p = std(curr_p_errs_mm);
+        mu_r = mean(curr_r_errs_rad);
+        std_r = std(curr_r_errs_rad);
+
         colors = zeros(num_points, 3);
         alphas = ones(num_points, 1);
         for i = 1:num_points
             if ~isempty(highlight_idx) && bin_indices(i) ~= highlight_idx
-                colors(i, :) = [0.85, 0.85, 0.85]; % 背景点更淡
+                colors(i, :) = [0.85, 0.85, 0.85];
                 alphas(i) = 0.1;
             else
                 c_idx = max(1, min(n_colors, round(error_norm(i, j) * (n_colors - 1)) + 1));
@@ -174,85 +170,41 @@ function render_one_figure(title_tag, batch_results, ideal_path, error_norm, ...
             end
         end
         
-        % 4. 叠加估计点云 (小点，体现定位抖动)
+        % 4. 叠加估计 jitter
         all_p_est = zeros(3, num_points);
         method_keys_map = {'ours', 'lm', 'elm', 'fischer'};
         curr_method = method_keys_map{j};
         for i = 1:num_points
-            % 提取第一个试验的估计位置 (假设 num_trials_per_point 为 1 或取首个)
             all_p_est(:, i) = batch_results(i).results(1).(['p_' curr_method]);
         end
-        scatter3(all_p_est(1, :), all_p_est(2, :), all_p_est(3, :), 10, colors, 'filled', ...
+        scatter3(all_p_est(1, :), all_p_est(2, :), all_p_est(3, :), 8, colors, 'filled', ...
                  'MarkerFaceAlpha', 'flat', 'AlphaData', alphas * 0.05, 'MarkerEdgeAlpha', 0);
 
-        % 5. 绘制真实位置散点
-        scatter3(all_p_true(1, :), all_p_true(2, :), all_p_true(3, :), 50, colors, 'filled', ...
+        % 5. 真实位置
+        scatter3(all_p_true(1, :), all_p_true(2, :), all_p_true(3, :), 40, colors, 'filled', ...
                  'MarkerFaceAlpha', 'flat', 'MarkerEdgeAlpha', 'flat', 'AlphaData', alphas);
         
         % 视图设置
-        xticks(-0.1:0.1:0.1); xlabel('$x$ [m]', 'FontSize', fontsize, 'Interpreter', 'latex');
-        yticks(-0.1:0.1:0.1); ylabel('$y$ [m]', 'FontSize', fontsize, 'Interpreter', 'latex');
-        zticks(-0.1:0.1:0.1); zlabel('$z$ [m]', 'FontSize', fontsize, 'Interpreter', 'latex');
         xlim([-0.12, 0.12]); ylim([-0.12, 0.12]); zlim([-0.12, 0.12]);
-        ax = gca;
-        ax.XLabel.Position = [-0.02, 0.17, -0.152];
-        ax.YLabel.Position = [0.21, -0.116, -0.124];
+        xticks(-0.1:0.1:0.1); yticks(-0.1:0.1:0.1); zticks(-0.1:0.1:0.1);
+        xlabel('$x$ [m]', 'Interpreter', 'latex'); ylabel('$y$ [m]', 'Interpreter', 'latex'); zlabel('$z$ [m]', 'Interpreter', 'latex');
         axis square; view(122, 13);
-        set(gca, 'FontSize', fontsize, 'TickLabelInterpreter', 'latex', 'TickDir', 'out', 'LineWidth', 1);
+        set(gca, 'FontSize', fontsize-2, 'TickLabelInterpreter', 'latex');
         
-        % 设置各子图标题：移除前面的字符指示器 (如 M:, A:)，只保留方法名
-        title(method_labels{j}, 'FontSize', fontsize, 'Interpreter', 'latex');
-    end
-    
-    % --- 全局 Colorbar ---
-    % cb = colorbar(nexttile(4, [2, 1])); % 挂在最后一个 3D 图上
-    % cb.Layout.Tile = 'east';
-    % cb.Label.String = 'Position Error [m]';
-    % cb.Label.Interpreter = 'latex';
-    % colormap(custom_colormap);
-    % clim([0, 0.01]);
-    
-    % --- 绘制误差箱线图 ---
-    for j = 1:num_methods
-        subtl = tiledlayout(tl, 2, 1);
-        subtl.Layout.Tile = 8 + j;
-        
-        % 筛选当前高亮层的数据
-        if ~isempty(highlight_idx)
-            mask = (bin_indices == highlight_idx);
-        else
-            mask = true(1, num_points);
-        end
-        
-        % R 误差
-        nexttile(subtl, 1);
-        r_errs = rot_err_mat(mask, j);
-        gc_r = categorical(repmat("Rotation", length(r_errs), 1));
-        boxchart(gc_r, r_errs, 'BoxFaceColor', [0.2 0.2 0.2], 'Orientation', 'horizontal');
-        if j == 1, yticklabels('$e_{\mathbf{R}}$ [rad]'); else, yticklabels(''); end
-        set(gca, 'FontSize', fontsize, 'TickDir', 'out', 'TickLabelInterpreter', 'latex', 'LineWidth', 1); box on;
-        
-        % p 误差
-        nexttile(subtl, 2);
-        p_errs = 1e3 * pos_err_mat(mask, j); % mm
-        gc_p = categorical(repmat("Position", length(p_errs), 1));
-        boxchart(gc_p, p_errs, 'BoxFaceColor', [0.2 0.2 0.2], 'Orientation', 'horizontal');
-        xlim([0, 10]);
-        if j == 1, yticklabels('$e_{\mathbf{p}}$ [mm]'); else, yticklabels(''); end
-        set(gca, 'FontSize', fontsize, 'TickDir', 'out', 'TickLabelInterpreter', 'latex', 'LineWidth', 1); box on;
+        % --- 关键修改：将 ep 和 er 统计信息放入题目 ---
+        % 使用 LaTeX 格式: ep: mu ± std mm, er: mu ± std rad
+        title_str = sprintf('%s\\newline\\fontsize{10}{12}\\selectfont $e_p: %.2f \\pm %.2f$ mm, $e_R: %.2f \\pm %.2f$ rad', ...
+                            method_labels{j}, mu_p, std_p, mu_r, std_r);
+        title(title_str, 'FontSize', fontsize, 'Interpreter', 'latex');
     end
 
-    % % --- 导出图像 ---
+    % --- 导出图像 ---
     if ~exist('results', 'dir'), mkdir('results'); end
-    filename = sprintf('results/PoseEst_%s_Ns%d.png', title_tag, n_sensors);
-    
+    filename = sprintf('results/PoseEst_Text_%s_Ns%d.png', title_tag, n_sensors);
     try
-        % 使用 export_fig 进行高质量导出 (600 DPI, 无裁剪)
         export_fig(fig_handle, filename, '-nocrop', '-r600', '-transparent');
-        fprintf('[render_one_figure] 高质量图像已导出: %s\n', filename);
-    catch ME
-        fprintf('[render_one_figure] export_fig 失败，尝试标准 saveas: %s\n', ME.message);
+        fprintf('[render_one_figure] 文本标注版图像已导出: %s\n', filename);
+    catch
         saveas(fig_handle, filename);
     end
 end
-

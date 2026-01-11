@@ -19,7 +19,6 @@ num_trials_per_point = 1;  % 每个测试点的实验次数（用于测试不同
 test_points = generate_test_points(params, num_test_points, 'random');
 
 fprintf('已生成 %d 个测试点\n', num_test_points);
-
 %% ========== 批量执行实验 ==========
 batch_results = run_batch_experiments(params, test_points, num_trials_per_point);
 

@@ -52,7 +52,7 @@ params.sensor.d_list = [
 params.ground_truth.theta_true = [1; 1; 1]; % 真实旋转向量 [rad] % 不是致命原因
 params.ground_truth.p_true = [0; 0; 0]; % 传感器阵列参考点真实位置 [m]
 %% 不确定性参数
-params.uncertainty.p_uncertainty = 0.02; % 位置不确定性
+params.uncertainty.p_uncertainty = 0.005; % 位置不确定性
 params.uncertainty.r_uncertainty = 0.5;  % 旋转不确定性
 params.uncertainty.disturbance_strength = 0e-4*ones(3,1);  % 扰动强度
 params.uncertainty.noise_strength = 0e-4;  % 噪声强度
