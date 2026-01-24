@@ -12,7 +12,7 @@ load('./exp/optimized_params.mat', 'params', 'test_points', 'b_total', 'b_total_
 data = load('./exp/path_ind.mat', 'magnetic_path_raw', 'magnetic_path_ideal');
 path_raw = data.magnetic_path_raw;
 path_raw_ideal = data.magnetic_path_ideal;
-b_total = b_total + b_total_bg; % 加回背景场，制造噪声
+% b_total = b_total + b_total_bg; % 加回背景场，制造噪声
 
 params_current = params;
 params_current.uncertainty.p_uncertainty = 0.005;
@@ -22,7 +22,7 @@ params_current.optimization.W = eye(3);
 params_current.optimization.options.FunctionTolerance = 1e-8;
 params_current.optimization.options.StepTolerance = 1e-8;
 params_current.optimization.mu = 1e-3;
-params_current.sensor.d_list = params.sensor.d_list(:, [2 6 11]);
+params_current.sensor.d_list = params.sensor.d_list;
 %% ========== 生成测试点 ==========
 % test_points_raw = struct();
 test_points_raw = test_points(path_raw);
@@ -57,7 +57,7 @@ batch_results = run_batch_experiments(params_current, test_points_raw, num_trial
 % plot_batch_results_text(batch_results, path_raw_ideal, params);
 
 % 4. 2D 投影版：仅绘制当前层 (highlight)，保留 ep/er 的 boxchart
-plot_batch_results_2d(batch_results, path_raw_ideal, params_current);
+% plot_batch_results_2d(batch_results, path_raw_ideal, params_current);
 
 % %% ========== 保存结果 ==========
 % save('results/exp1_batch_results.mat', 'batch_results', 'test_points', 'params');

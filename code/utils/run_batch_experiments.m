@@ -63,7 +63,7 @@ for point_idx = 1:num_test_points
         ub_p = p_true_current + workspace_radius;
         results(trial_idx) = run_single_experiment(current_exp_idx, ...
             total_experiments_count, params_current, ...
-            b_total(:, [2 6 11], trial_idx), d_list, p_true_current, R_true, lb_p, ub_p);
+            b_total(:, :, trial_idx), d_list, p_true_current, R_true, lb_p, ub_p);
     end
 
     % 沿着num_trials_per_point计算平均
