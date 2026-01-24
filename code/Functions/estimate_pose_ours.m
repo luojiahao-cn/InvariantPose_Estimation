@@ -54,11 +54,13 @@ end
 %% Estimate p
 function res = obj_fun22(p, m_pos, m_hat, m_norm, num_sensors, b_bar, Q_bar, X, W)
     [b_p, A_p] = calcFieldAndGradient(p, m_pos, m_hat, m_norm);
-    term1 = norm(b_p * ones(1, num_sensors) * Q_bar, 'fro') - norm(b_bar, 'fro');
+    B_bar = b_p * ones(1, num_sensors) * Q_bar;
+    % term1 = norm(B_bar, 'fro') - norm(b_bar, 'fro');
+    term1 = sort(eig(B_bar * B_bar'), 'descend') - sort(eig(b_bar * b_bar'), 'descend'); % 特征值匹配
     term5 = sort(eig(A_p), 'descend') - sort(eig(X), 'descend'); % 特征值匹配
     res = [term1; term5(1:2)]; % 只需要匹配最大的两个特征值，因为迹0
     % res = [term1; term2; term5];
-    res = W * res;
+    % res = W * res;
 end
 
 %% 网格粗搜索
