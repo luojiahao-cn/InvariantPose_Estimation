@@ -38,22 +38,10 @@ for point_idx = 1:num_test_points
     % 计算真实旋转矩阵
     R_true = MatrixExp3(VecToso3(test_points(point_idx).theta_true));
     
-    % 对该测试点执行多次实验
-    % 预先初始化结果结构体数组，确保字段一致
-    results_template = struct('p_lm', [], 'R_lm', [], 'p_elm', [], 'R_elm', [],...
-     'p_ours', [], 'R_ours', [], 'p_Rlm', [], 'R_Rlm', [],...
-      'lm_pos_error', [], 'lm_rot_error', [],...
-       'elm_pos_error', [], 'elm_rot_error', [], ... 
-       'ours_pos_error', [], 'ours_rot_error', [],...
-        'Rlm_pos_error', [], 'Rlm_rot_error', [],...
-        'p_init', [], 'theta_init', [],...
-        'p_fischer', [], 'R_fischer', [], 'fischer_pos_error', [], 'fischer_rot_error', [],...
-        'time_lm', [], 'time_elm', [], 'time_ours', [], 'time_fischer', [], 'time_Rlm', []);
+    % 使用元胞数组收集结果，避开繁琐且易错的结构体模板
+    results_cell = cell(1, num_trials_per_point);
     
-    % 预分配结构体数组以支持 parfor 并行计算
-    results = repmat(results_template, 1, num_trials_per_point);
-    
-    % 提取常量变量以优化 parfor 性能（避免在循环中重复检索）
+    % 提取常量变量
     total_experiments_count = num_test_points * num_trials_per_point;
     p_true_current = test_points(point_idx).p_true;
 
@@ -61,17 +49,34 @@ for point_idx = 1:num_test_points
         current_exp_idx = (point_idx - 1) * num_trials_per_point + trial_idx;
         lb_p = p_true_current - workspace_radius;
         ub_p = p_true_current + workspace_radius;
-        results(trial_idx) = run_single_experiment(current_exp_idx, ...
+        
+        % 磁场索引逻辑
+        if ndims(b_total) == 4
+            b_input = b_total(:, :, point_idx, trial_idx);
+        elseif size(b_total, 3) == total_experiments_count
+            b_input = b_total(:, :, current_exp_idx);
+        else
+            b_input = b_total(:, :, point_idx);
+        end
+
+        results_cell{trial_idx} = run_single_experiment(current_exp_idx, ...
             total_experiments_count, params_current, ...
-            b_total(:, :, trial_idx), d_list, p_true_current, R_true, lb_p, ub_p);
+            b_input, d_list, p_true_current, R_true, lb_p, ub_p);
     end
 
-    % 沿着num_trials_per_point计算平均
-    summary = calculate_point_summary(results);
+    % 将 cell 转换回结构体数组
+    results_struct_array = [results_cell{:}];
+    
+    % 将结构体数组转换为 Table，处理不同维度的字段（如 3x1 向量或 3x3 矩阵）
+    % 我们使用这种方式强制将所有内容视为单行条目
+    results_table = struct2table(results_struct_array, 'AsArray', isscalar(results_struct_array));
+    
+    % 沿着 trials 计算平均值和汇总
+    summary = calculate_point_summary_from_table(results_table);
         
-    % 存储结果
+    % 存储结果（转换为 struct 数组以保持与原有绘图代码兼容）
     batch_results(point_idx).test_point = test_points(point_idx);
-    batch_results(point_idx).results = results;
+    batch_results(point_idx).results = results_struct_array;
     batch_results(point_idx).summary = summary;
 end
 
@@ -79,75 +84,50 @@ fprintf('\n========== 批量实验完成 ==========\n');
 
 end
 
-function summary = calculate_point_summary(results)
-    % 计算单个测试点的统计摘要
-    % 提取所有误差
-    lm_pos_errors = [results.lm_pos_error];
-    lm_rot_errors = [results.lm_rot_error];
-    elm_pos_errors = [results.elm_pos_error];
-    elm_rot_errors = [results.elm_rot_error];
-    ours_pos_errors = [results.ours_pos_error];
-    ours_rot_errors = [results.ours_rot_error];
-    fischer_pos_errors = [results.fischer_pos_error];
-    fischer_rot_errors = [results.fischer_rot_error];
-    Rlm_pos_errors = [results.Rlm_pos_error];
-    Rlm_rot_errors = [results.Rlm_rot_error];
-    time_lm = [results.time_lm];
-    time_elm = [results.time_elm];
-    time_ours = [results.time_ours];
-    time_fischer = [results.time_fischer];
-    time_Rlm = [results.time_Rlm];
+function summary = calculate_point_summary_from_table(T)
+    % 使用 Table 的向量化操作进行极简统计
+    methods = {'lm', 'elm', 'ours', 'fischer', 'Rlm'};
+    summary = struct();
+    var_names = T.Properties.VariableNames;
 
-    % 计算统计量
-    summary.lm.pos_mean = mean(lm_pos_errors);
-    summary.lm.pos_std = std(lm_pos_errors);
-    summary.lm.pos_max = max(lm_pos_errors);
-    summary.lm.rot_mean = mean(lm_rot_errors);
-    summary.lm.rot_std = std(lm_rot_errors);
-    summary.lm.rot_max = max(lm_rot_errors);
-    summary.lm.time_mean = mean(time_lm);
-    summary.lm.time_std = std(time_lm);
-    summary.lm.time_max = max(time_lm);
-
-    summary.elm.pos_mean = mean(elm_pos_errors);
-    summary.elm.pos_std = std(elm_pos_errors);
-    summary.elm.pos_max = max(elm_pos_errors);
-    summary.elm.rot_mean = mean(elm_rot_errors);
-    summary.elm.rot_std = std(elm_rot_errors);
-    summary.elm.rot_max = max(elm_rot_errors);
-    summary.elm.time_mean = mean(time_elm);
-    summary.elm.time_std = std(time_elm);
-    summary.elm.time_max = max(time_elm);
-
-    summary.ours.pos_mean = mean(ours_pos_errors);
-    summary.ours.pos_std = std(ours_pos_errors);
-    summary.ours.pos_max = max(ours_pos_errors);
-    summary.ours.rot_mean = mean(ours_rot_errors);
-    summary.ours.rot_std = std(ours_rot_errors);
-    summary.ours.rot_max = max(ours_rot_errors);
-    summary.ours.time_mean = mean(time_ours);
-    summary.ours.time_std = std(time_ours);
-    summary.ours.time_max = max(time_ours);
-
-    summary.fischer.pos_mean = mean(fischer_pos_errors);
-    summary.fischer.pos_std = std(fischer_pos_errors);
-    summary.fischer.pos_max = max(fischer_pos_errors);
-    summary.fischer.rot_mean = mean(fischer_rot_errors);
-    summary.fischer.rot_std = std(fischer_rot_errors);
-    summary.fischer.rot_max = max(fischer_rot_errors);
-    summary.fischer.time_mean = mean(time_fischer);
-    summary.fischer.time_std = std(time_fischer);
-    summary.fischer.time_max = max(time_fischer);
-
-    summary.Rlm.pos_mean = mean(Rlm_pos_errors);
-    summary.Rlm.pos_std = std(Rlm_pos_errors);
-    summary.Rlm.pos_max = max(Rlm_pos_errors);
-    summary.Rlm.rot_mean = mean(Rlm_rot_errors);
-    summary.Rlm.rot_std = std(Rlm_rot_errors);
-    summary.Rlm.rot_max = max(Rlm_rot_errors);
-    summary.Rlm.time_mean = mean(time_Rlm);
-    summary.Rlm.time_std = std(time_Rlm);
-    summary.Rlm.time_max = max(time_Rlm);
-
+    for i = 1:length(methods)
+        m = methods{i};
+        
+        % 自动匹配字段名并计算均值/标准差/最大值
+        f_pos = [m '_pos_error'];
+        f_rot = [m '_rot_error'];
+        f_r   = [m '_r_error'];
+        f_time = ['time_' m];
+        
+        if ismember(f_pos, var_names)
+            summary.(m).pos_mean = mean(T.(f_pos));
+            summary.(m).pos_std  = std(T.(f_pos));
+            summary.(m).pos_max  = max(T.(f_pos));
+        end
+        if ismember(f_rot, var_names)
+            summary.(m).rot_mean = mean(T.(f_rot));
+            summary.(m).rot_std  = std(T.(f_rot));
+            summary.(m).rot_max  = max(T.(f_rot));
+        end
+        if ismember(f_r, var_names)
+            summary.(m).r_mean = mean(T.(f_r));
+            summary.(m).r_std  = std(T.(f_r));
+        end
+        if ismember(f_time, var_names)
+            summary.(m).time_mean = mean(T.(f_time));
+            summary.(m).time_std  = std(T.(f_time));
+        end
+    end
+    
+    % 特殊字段处理 (Direct R)
+    if ismember('direct_r_error_MM', var_names)
+        summary.ours.direct_r_mean_MM = mean(T.direct_r_error_MM);
+    end
+    if ismember('direct_r_error_RO', var_names)
+        summary.ours.direct_r_mean_RO = mean(T.direct_r_error_RO);
+    end
+    if ismember('direct_r_error_SDP', var_names)
+        summary.ours.direct_r_mean_SDP = mean(T.direct_r_error_SDP);
+    end
 end
 

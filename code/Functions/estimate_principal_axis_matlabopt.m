@@ -151,6 +151,8 @@ switch method
             'MaxIterations', opts.maxIter, ...
             'FunctionTolerance', opts.tolFun, ...
             'StepTolerance', opts.tolX);
+        
+        
 
         [z_star, resnorm, resvec, exitflag, output] = lsqnonlin(@residuals, z0, [], [], options);
         r_hat = angles_to_r(z_star);

@@ -16,7 +16,7 @@ path_raw_ideal = data.magnetic_path_ideal;
 
 params_current = params;
 params_current.uncertainty.p_uncertainty = 0.005;
-params_current.uncertainty.r_uncertainty = 0.1;
+params_current.uncertainty.r_uncertainty = 0.5;
 params_current.workspace.radius = params_current.uncertainty.p_uncertainty;
 params_current.optimization.W = eye(3);
 params_current.optimization.options.FunctionTolerance = 1e-8;
@@ -46,6 +46,30 @@ b_total_bg = b_total_bg(:, :, path_raw);
 batch_results = run_batch_experiments(params_current, test_points_raw, num_trials_per_point, b_total);
 
 %% ========== 结果分析 ==========
+% 计算所有测试点的总平均值
+all_summary = struct();
+methods = {'lm', 'elm', 'ours', 'fischer', 'Rlm'};
+for i = 1:length(methods)
+    m = methods{i};
+    all_summary.(m).pos_error = mean(arrayfun(@(x) x.summary.(m).pos_mean, batch_results));
+    all_summary.(m).rot_error = mean(arrayfun(@(x) x.summary.(m).rot_mean, batch_results));
+    all_summary.(m).r_error = mean(arrayfun(@(x) x.summary.(m).r_mean, batch_results));
+end
+all_summary.ours.direct_r_error_MM  = mean(arrayfun(@(x) x.summary.ours.direct_r_mean_MM, batch_results));
+all_summary.ours.direct_r_error_RO  = mean(arrayfun(@(x) x.summary.ours.direct_r_mean_RO, batch_results));
+all_summary.ours.direct_r_error_SDP = mean(arrayfun(@(x) x.summary.ours.direct_r_mean_SDP, batch_results));
+
+fprintf('\n========== 总平均误差 (1-abs(inner)) ==========\n');
+fprintf('Method    | Pos Error (m) | R-axis Error\n');
+fprintf('----------|---------------|--------------\n');
+for i = 1:length(methods)
+    m = methods{i};
+    fprintf('%-9s | %13.6f | %12.6f\n', upper(m), all_summary.(m).pos_error, all_summary.(m).r_error);
+end
+fprintf('%-9s | %13s | %12.6f (SCA)\n', 'OURS_DIR', '-', all_summary.ours.direct_r_error_MM);
+fprintf('%-9s | %13s | %12.6f (RO)\n', 'OURS_DIR', '-', all_summary.ours.direct_r_error_RO);
+fprintf('%-9s | %13s | %12.6f (SDP)\n', 'OURS_DIR', '-', all_summary.ours.direct_r_error_SDP);
+
 % 绘图函数：
 % 1. 标准版：生成全景图和分字母图
 % plot_batch_results(batch_results, path_raw_ideal, params);
