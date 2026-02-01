@@ -13,7 +13,7 @@ function [prob, opts] = compute_principal_axis_prob(b_bar, B_bar, A_p, X, opts)
 %
 % Output:
 %   prob : Standardized data structure
-%       .M     : Cell array of symmetrized A^k
+%       .Ak    : Cell array of symmetrized A^k
 %       .s     : Vector of target invariants u' X^k u
 %       .alpha : Weights for each power k in K
 %       .G     : B_bar * B_bar'
@@ -32,7 +32,7 @@ u = opts.u(:); u = u / max(norm(u), eps);
 if ~isfield(opts,'K') || isempty(opts.K), opts.K = [1, 2]; end
 K = opts.K(:)';
 
-if ~isfield(opts,'alpha') || isempty(opts.alpha), opts.alpha = ones(size(K)); end
+if ~isfield(opts,'alpha') || isempty(opts.alpha), opts.alpha = [1, 1]; end
 alpha = opts.alpha(:)';
 
 if ~isfield(opts,'beta') || isempty(opts.beta), opts.beta = 1e3; end
@@ -56,11 +56,11 @@ for kk = 1:kmax
     X_pows{kk} = 0.5*(X_pow + X_pow');
 end
 
-M = cell(1, numel(K));
+Ak = cell(1, numel(K));
 s = zeros(1, numel(K));
 for i = 1:numel(K)
     ki = K(i);
-    M{i} = A_pows{ki};
+    Ak{i} = A_pows{ki};
     s(i) = u' * X_pows{ki} * u;
 end
 
@@ -89,7 +89,7 @@ else
 end
 
 % 6. Pack into prob structure
-prob.M      = M;
+prob.Ak     = Ak;
 prob.s      = s;
 prob.K      = K;
 prob.alpha  = alpha;

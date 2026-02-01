@@ -15,7 +15,7 @@ function [r_hat, info] = estimate_principal_axis_SDP(prob, opts)
 if nargin < 2, opts = struct(); end
 
 % ---------------- unpack prob ----------------
-M     = prob.M;
+Ak    = prob.Ak;
 s     = prob.s;
 alpha = prob.alpha;
 beta  = prob.beta;
@@ -39,11 +39,10 @@ cvx_begin sdp quiet
         [1, r'; r, R] >= 0;
         
         for i = 1:numel(K)
-            dev = trace(M{i} * R) - s(i);
+            dev = trace(Ak{i} * R) - s(i);
             [1, dev; dev, t(i)] >= 0;
         end
 cvx_end
-
 
 % ---------------- 3. 结果提取与认证 ----------------
 % 从 R 中提取 r。
@@ -58,23 +57,35 @@ info.optval = cvx_optval;
 info.rank_X = rank(R, 1e-4); 
 info.tightness = max_eig / trace(D); 
 info.R = R;
+info.cost_est = full_cost(r_hat, Ak, alpha, s, beta, G, g);
 
 % 计算目标函数值对比 (Cost Comparison)
-info.cost_est = full_cost(r_hat, M, alpha, s, beta, G, g);
-if ~isempty(prob.r_true)
-    info.cost_true = full_cost(prob.r_true, M, alpha, s, beta, G, g);
-else
-    info.cost_true = NaN;
-end
+% info.cost_est = full_cost(r_hat, Ak, alpha, s, beta, G, g);
+% if ~isempty(prob.r_true)
+%     info.cost_true = full_cost(prob.r_true, Ak, alpha, s, beta, G, g);
+% else
+%     info.cost_true = NaN;
+% end
+
+% 下界计算
+% info.lb_sdp = cvx_optval;
+% info.ub_hat = info.cost_est;
+% if ~isempty(prob.r_true)
+%     info.ub_true = info.cost_true;
+% else
+%     info.ub_true = NaN;
+% end
+% info.gap_hat  = info.ub_hat  - info.lb_sdp;
+% info.gap_true = info.ub_true - info.lb_sdp;
 
 end
 
 % ---------------- helper: full cost ----------------
-function J = full_cost(rr, M, alpha, s, beta, G, g)
+function J = full_cost(rr, Ak, alpha, s, beta, G, g)
 rr = rr(:); rr = rr / max(norm(rr), eps);
 J1 = 0;
-for i = 1:numel(M)
-    q = rr' * M{i} * rr;
+for i = 1:numel(Ak)
+    q = rr' * Ak{i} * rr;
     J1 = J1 + alpha(i) * (q - s(i))^2;
 end
 J2 = beta * (rr' * G * rr - 2 * g' * rr);

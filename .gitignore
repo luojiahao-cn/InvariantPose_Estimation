@@ -2,3 +2,8 @@
 *.asv
 *.mat
 *.png
+
+# big data
+data/*.mat
+*.json
+*_data

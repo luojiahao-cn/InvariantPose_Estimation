@@ -120,6 +120,12 @@ function summary = calculate_point_summary_from_table(T)
     end
     
     % 特殊字段处理 (Direct R)
+    summary.ours.direct_r_mean_MM  = NaN;
+    summary.ours.direct_r_mean_RO  = NaN;
+    summary.ours.direct_r_mean_SDP = NaN;
+    summary.ours.direct_r_mean_SDP_reduced = NaN;
+    summary.ours.direct_r_mean_spec = NaN;
+    
     if ismember('direct_r_error_MM', var_names)
         summary.ours.direct_r_mean_MM = mean(T.direct_r_error_MM);
     end
@@ -128,6 +134,12 @@ function summary = calculate_point_summary_from_table(T)
     end
     if ismember('direct_r_error_SDP', var_names)
         summary.ours.direct_r_mean_SDP = mean(T.direct_r_error_SDP);
+    end
+    if ismember('direct_r_error_SDP_reduced', var_names)
+        summary.ours.direct_r_mean_SDP_reduced = mean(T.direct_r_error_SDP_reduced);
+    end
+    if ismember('direct_r_error_spec', var_names)
+        summary.ours.direct_r_mean_spec = mean(T.direct_r_error_spec);
     end
 end
 

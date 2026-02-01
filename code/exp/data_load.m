@@ -9,7 +9,8 @@ addpath(fullfile(repo_root, 'Functions'));
 addpath(fullfile(repo_root, 'tools'));
 
 %% Locate scan_results JSON file
-scan_filename = 'scan_results_20260103_145914.json'; % Specify filename or leave empty to auto-select
+% scan_filename = 'scan_results_20260103_145914.json'; % Specify filename or leave empty to auto-select
+scan_filename = './data/scan_results_rotation.json';
 data_pattern = 'scan_results_*.json';
 if ~(exist('scan_filename', 'var') && ischar(scan_filename) && ~isempty(scan_filename))
 	scan_filename = select_latest_scan(exp_dir, data_pattern);
@@ -38,7 +39,7 @@ head_count = min(5, height(overview));
 disp('Preview of decoded records:');
 disp(overview(1:head_count, :));
 
-save(fullfile(exp_dir, 'scan_records_bg.mat'), 'scan_records');
+save(fullfile(exp_dir, 'scan_records_rotation.mat'), 'scan_records');
 %% Helper functions
 function latest_name = select_latest_scan(data_dir, pattern)
 	files = dir(fullfile(data_dir, pattern));

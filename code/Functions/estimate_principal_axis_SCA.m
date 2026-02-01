@@ -37,7 +37,7 @@ if ~isfield(opts,'trsHardTol') || isempty(opts.trsHardTol), opts.trsHardTol = 1e
 trsHardTol = opts.trsHardTol;
 
 % ---------------- unpack prob ----------------
-M     = prob.M;
+Ak    = prob.Ak;
 s     = prob.s;
 alpha = prob.alpha;
 beta  = prob.beta;
@@ -54,12 +54,12 @@ step_hist   = zeros(maxIter,1);
 lambda_hist = nan(maxIter,1);
 
 if ~isempty(prob.r_true)
-    cost_true = full_cost(prob.r_true, M, alpha, s, beta, G, g);
+    cost_true = full_cost(prob.r_true, Ak, alpha, s, beta, G, g);
 else
     cost_true = NaN;
 end
 
-cost_hist(1) = full_cost(r, M, alpha, s, beta, G, g);
+cost_hist(1) = full_cost(r, Ak, alpha, s, beta, G, g);
 converged = false;
 t_end = 0;
 
@@ -71,7 +71,7 @@ for t = 1:maxIter
     f = beta * g;
 
     for j = 1:numel(K)
-        a = M{j} * r_t;              % a_k^(t) = A^k r^(t)
+        a = Ak{j} * r_t;              % a_k^(t) = A^k r^(t)
         c = r_t.' * a;               % c_k^(t) = r^(t)' A^k r^(t)
 
         H = H + 4 * alpha(j) * (a * a.');              % rank-1 PSD
@@ -92,8 +92,8 @@ for t = 1:maxIter
 
     % Optional sign check w.r.t. ORIGINAL cost
     if checkSign
-        if full_cost(-r_new, M, alpha, s, beta, G, g) < ...
-           full_cost( r_new, M, alpha, s, beta, G, g)
+        if full_cost(-r_new, Ak, alpha, s, beta, G, g) < ...
+           full_cost( r_new, Ak, alpha, s, beta, G, g)
             r_new = -r_new;
         end
     end
@@ -103,7 +103,7 @@ for t = 1:maxIter
     lambda_hist(t) = lambda;
 
     r = r_new;
-    cost_hist(t+1) = full_cost(r, M, alpha, s, beta, G, g);
+    cost_hist(t+1) = full_cost(r, Ak, alpha, s, beta, G, g);
 
 
     if verbose
@@ -243,11 +243,11 @@ r = r / max(norm(r), eps);
 end
 
 % ---------------- helper: full cost ----------------
-function J = full_cost(rr, M, alpha, s, beta, G, g)
+function J = full_cost(rr, Ak, alpha, s, beta, G, g)
 rr = rr(:); rr = rr / max(norm(rr), eps);
 J1 = 0;
-for j = 1:numel(M)
-    q = rr.' * M{j} * rr;
+for j = 1:numel(Ak)
+    q = rr.' * Ak{j} * rr;
     J1 = J1 + alpha(j) * (q - s(j))^2;
 end
 J2 = beta * (rr.' * G * rr - 2 * g.' * rr);

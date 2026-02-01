@@ -43,7 +43,7 @@ if ~isfield(opts,'bbClamp') || isempty(opts,'bbClamp'), opts.bbClamp = [1e-6, 1e
 bbClamp = opts.bbClamp(:)';
 
 % ---------------- unpack prob ----------------
-M     = prob.M;
+Ak    = prob.Ak;
 s     = prob.s;
 alpha = prob.alpha;
 beta  = prob.beta;
@@ -62,11 +62,11 @@ ls_hist   = zeros(maxIter, 1);
 
 cost_true = NaN;
 if ~isempty(prob.r_true)
-    cost_true = full_cost(prob.r_true, M, alpha, s, beta, G, g);
+    cost_true = full_cost(prob.r_true, Ak, alpha, s, beta, G, g);
 end
 
-cost_hist(1) = full_cost(r, M, alpha, s, beta, G, g);
-[gradR, ~]   = riemannian_grad(r, M, alpha, s, beta, G, g);
+cost_hist(1) = full_cost(r, Ak, alpha, s, beta, G, g);
+[gradR, ~]   = riemannian_grad(r, Ak, alpha, s, beta, G, g);
 grad_hist(1) = norm(gradR);
 
 converged = false;
@@ -81,7 +81,7 @@ for t = 1:maxIter
     r_t = r;
 
     % Riemannian gradient at r_t
-    [gradR, gradE] = riemannian_grad(r_t, M, alpha, s, beta, G, g);
+    [gradR, gradE] = riemannian_grad(r_t, Ak, alpha, s, beta, G, g);
     ng = norm(gradR);
 
     if verbose
@@ -108,7 +108,7 @@ for t = 1:maxIter
     for ls = 1:ls_maxSteps
         nls = ls;
         r_cand = retract_sphere(r_t + t_ls * dir);
-        f_cand = full_cost(r_cand, M, alpha, s, beta, G, g);
+        f_cand = full_cost(r_cand, Ak, alpha, s, beta, G, g);
 
         if f_cand <= f0 + ls_c1 * t_ls * deriv0
             accepted = true;
@@ -128,8 +128,8 @@ for t = 1:maxIter
 
     % Optional sign check w.r.t. original objective
     if checkSign
-        if full_cost(-r_new, M, alpha, s, beta, G, g) < ...
-           full_cost( r_new, M, alpha, s, beta, G, g)
+        if full_cost(-r_new, Ak, alpha, s, beta, G, g) < ...
+           full_cost( r_new, Ak, alpha, s, beta, G, g)
             r_new = -r_new;
         end
     end
@@ -139,8 +139,8 @@ for t = 1:maxIter
 
     % Update history
     r = r_new;
-    cost_hist(t+1) = full_cost(r, M, alpha, s, beta, G, g);
-    [gradR_new, ~] = riemannian_grad(r, M, alpha, s, beta, G, g);
+    cost_hist(t+1) = full_cost(r, Ak, alpha, s, beta, G, g);
+    [gradR_new, ~] = riemannian_grad(r, Ak, alpha, s, beta, G, g);
 
     grad_hist(t+1) = norm(gradR_new);
 
@@ -208,17 +208,17 @@ r = r / max(norm(r), eps);
 end
 
 % ---------------- helper: Riemannian gradient on S^2 ----------------
-function [gradR, gradE] = riemannian_grad(r, M, alpha, s, beta, G, g_vec)
+function [gradR, gradE] = riemannian_grad(r, Ak, alpha, s, beta, G, g_vec)
 % Euclidean gradient (ambient R^3)
 rr = r(:);
 rr = rr / max(norm(rr), eps);
 
 g = zeros(3,1);
 
-% sum_k alpha_k (r' M_k r - s_k)^2
-for j = 1:numel(M)
-    q = rr.' * M{j} * rr;      % scalar
-    a = M{j} * rr;            % 3x1
+% sum_k alpha_k (r' Ak_k r - s_k)^2
+for j = 1:numel(Ak)
+    q = rr.' * Ak{j} * rr;      % scalar
+    a = Ak{j} * rr;            % 3x1
     g = g + 4 * alpha(j) * (q - s(j)) * a;
 end
 
@@ -234,11 +234,11 @@ gradR = P * gradE;
 end
 
 % ---------------- helper: full cost ----------------
-function J = full_cost(rr, M, alpha, s, beta, G, g)
+function J = full_cost(rr, Ak, alpha, s, beta, G, g)
 rr = rr(:); rr = rr / max(norm(rr), eps);
 J1 = 0;
-for j = 1:numel(M)
-    q = rr.' * M{j} * rr;
+for j = 1:numel(Ak)
+    q = rr.' * Ak{j} * rr;
     J1 = J1 + alpha(j) * (q - s(j))^2;
 end
 % Quadratic form for field consistency

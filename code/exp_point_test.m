@@ -55,9 +55,11 @@ for i = 1:length(methods)
     all_summary.(m).rot_error = mean(arrayfun(@(x) x.summary.(m).rot_mean, batch_results));
     all_summary.(m).r_error = mean(arrayfun(@(x) x.summary.(m).r_mean, batch_results));
 end
-all_summary.ours.direct_r_error_MM  = mean(arrayfun(@(x) x.summary.ours.direct_r_mean_MM, batch_results));
 all_summary.ours.direct_r_error_RO  = mean(arrayfun(@(x) x.summary.ours.direct_r_mean_RO, batch_results));
 all_summary.ours.direct_r_error_SDP = mean(arrayfun(@(x) x.summary.ours.direct_r_mean_SDP, batch_results));
+all_summary.ours.direct_r_error_SDP_red = mean(arrayfun(@(x) x.summary.ours.direct_r_mean_SDP_reduced, batch_results));
+all_summary.ours.direct_r_error_spec = mean(arrayfun(@(x) x.summary.ours.direct_r_mean_spec, batch_results));
+all_summary.ours.direct_r_error_MM  = mean(arrayfun(@(x) x.summary.ours.direct_r_mean_MM, batch_results));
 
 fprintf('\n========== 总平均误差 (1-abs(inner)) ==========\n');
 fprintf('Method    | Pos Error (m) | R-axis Error\n');
@@ -69,6 +71,8 @@ end
 fprintf('%-9s | %13s | %12.6f (SCA)\n', 'OURS_DIR', '-', all_summary.ours.direct_r_error_MM);
 fprintf('%-9s | %13s | %12.6f (RO)\n', 'OURS_DIR', '-', all_summary.ours.direct_r_error_RO);
 fprintf('%-9s | %13s | %12.6f (SDP)\n', 'OURS_DIR', '-', all_summary.ours.direct_r_error_SDP);
+fprintf('%-9s | %13s | %12.6f (SDP_RED)\n', 'OURS_DIR', '-', all_summary.ours.direct_r_error_SDP_red);
+fprintf('%-9s | %13s | %12.6f (SPEC)\n', 'OURS_DIR', '-', all_summary.ours.direct_r_error_spec);
 
 % 绘图函数：
 % 1. 标准版：生成全景图和分字母图
