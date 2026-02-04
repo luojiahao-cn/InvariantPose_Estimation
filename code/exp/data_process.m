@@ -44,10 +44,10 @@ d_list = d_list - mean(d_list, 2);
 % % draw_axes(d_list(:,12), R.R4);
 % scatter3(d_list(1,:), d_list(2,:), d_list(3,:), 'filled');
 %%
-load('scan_records.mat', 'scan_records');
+load('./exp/mat_data/scan_records_rotation.mat', 'scan_records');
 [b_total, p_true, R_true, m_hat, m_pos, test_points, radius] = process_matrix(scan_records, R);
 
-load('scan_records_bg.mat', 'scan_records');
+load('./exp/mat_data/scan_records_rotation_bg.mat', 'scan_records');
 b_total_bg = process_matrix(scan_records, R);
 
 b_total = b_total - b_total_bg;
@@ -137,7 +137,7 @@ ylabel('Column Index');
 %     quiver3(p_true(1, i), p_true(2, i), p_true(3, i), b_p_sim(1, i), b_p_sim(2, i), b_p_sim(3, i), 1e1, 'b');
 % end
 
-% save('optimized_params.mat', 'params', 'test_points', 'b_total', 'b_total_bg');
+save('optimized_params_rotation.mat', 'params', 'test_points', 'b_total', 'b_total_bg');
 
 for idx = 1:size(b_total, 3)
 
