@@ -13,14 +13,14 @@ load('./exp/mat_data/optimized_params_rotation.mat', 'test_points', 'b_total', '
 % b_total = b_total + b_total_bg; % 加回背景场，制造噪声
 
 params_current = params;
-params_current.uncertainty.p_uncertainty = 0.01;
+params_current.uncertainty.p_uncertainty = 0.005;
 params_current.uncertainty.r_uncertainty = 0.5;
 params_current.workspace.radius = params_current.uncertainty.p_uncertainty;
 params_current.optimization.W = eye(3);
 params_current.optimization.options.FunctionTolerance = 1e-8;
 params_current.optimization.options.StepTolerance = 1e-8;
 params_current.optimization.mu = 1e-3;
-params_current.sensor.d_list = params.sensor.d_list;
+params_current.sensor.d_list = params.sensor.d_list(:, 1:6);
 %% ========== 实验设置 ==========
 num_trials_per_point = 1;  % 每个测试点的实验次数（用于测试不同初始值）
 % 生成方法选项：
@@ -31,13 +31,8 @@ num_trials_per_point = 1;  % 每个测试点的实验次数（用于测试不同
 
 % fprintf('已生成 %d 个测试点\n', num_test_points);
 
-% 为当前测试点生成磁场数据
-% [b_total, ~, ~, ~, ~] = generate_magnetic_data(params_current);
-% 静磁场下LM就炸了
-% b_total = b_total - b_total_bg
-
 %% ========== 批量执行实验 ==========
-batch_results = run_batch_experiments(params_current, test_points, num_trials_per_point, b_total);
+batch_results = run_batch_experiments(params_current, test_points, num_trials_per_point, b_total(:, 1:6, :));
 
 %% ========== 结果分析 ==========
 % 计算所有测试点的总平均值
