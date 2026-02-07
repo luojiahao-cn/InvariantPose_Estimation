@@ -1,4 +1,4 @@
-function r = estimate_principal_axis(b_bar, B_bar, A_p, X)
+function r = estimate_principal_axis(b_bar, B_bar, A_p, X, opts)
 % Principal-axis estimator (paper-aligned):
 %   - use (s1,s2) invariants to solve w
 %   - enumerate finite candidates z (modulo z ~ -z)
@@ -12,7 +12,7 @@ function r = estimate_principal_axis(b_bar, B_bar, A_p, X)
 % Output:
 %   r     : 3x1   (undirected) principal axis in world frame
 
-    u = [1;0;0];
+    u = opts.u;
 
     % --- enforce symmetry (numerical stability) ---
     A_p = 0.5 * (A_p + A_p');
@@ -28,23 +28,62 @@ function r = estimate_principal_axis(b_bar, B_bar, A_p, X)
     s1 = u' * X * u;
     s2 = u' * (X*X) * u;
 
-    % --- solve for w in squared coordinates ---
+    % --- solve for w on the simplex directly (w>=0, sum(w)=1) ---
     C = [ 1,        1,        1;
-          lam(1),   lam(2),   lam(3);
-          lam(1)^2, lam(2)^2, lam(3)^2 ];
-    b = [1; s1; s2];
+        lam(1),   lam(2),   lam(3);
+        lam(1)^2, lam(2)^2, lam(3)^2 ];
+    h = [1; s1; s2];
+
+    % simplex constraints
+    Aeq = [1 1 1];
+    beq = 1;
+    lb  = [0;0;0];
+    ub  = [];  % no upper bound
+
+    % robust initial guess
+    % w0 = ones(3,1)/3;
+    % w0 = C\h;  % unconstrained solution as initial guess
+    w0 = (V' * opts.r0).^2;
+
+    % % lsqlin options
+    opts_lsqlin = optimoptions('lsqlin', ...
+        'Display','off', ...
+        'Algorithm','active-set');   % or 'active-set'
+
+    % % Solve: min ||C w - b||^2  s.t.  w>=0, sum(w)=1
+    C_bar = [C; eye(3)];
+    h_bar = [h; w0];
+    % w = lsqlin(C, h, [], [], Aeq, beq, lb, ub, w0, opts_lsqlin);
+    w = lsqlin(C_bar, h_bar, [], [], Aeq, beq, lb, ub, w0, opts_lsqlin);
+
+    % % fallback if solver fails (rare)
+    % if exitflag <= 0 || any(~isfinite(w))
+    %     w = project_to_simplex_3d(w0);
+    % end
+
+    % % safety normalization (tiny numerical drift)
+    % w = max(w, 0);
+    % w = w / max(sum(w), eps);
 
     % Unconstrained solve; if ill-conditioned, fall back to pinv
-    if rcond(C) < 1e-12
-        w = pinv(C) * b;
-    else
-        w = C \ b;
-    end
+    % if rcond(C) < 1e-12
+    %     w = pinv(C) * b;
+    % else
+    %     w = C \ b;
+    % end
 
-    % Project onto simplex: w>=0, sum(w)=1
-    w = project_to_simplex_3d(w);
+    % % Project onto simplex: w>=0, sum(w)=1
 
-    % --- enumerate candidates z modulo z ~ -z (<=4 candidates) ---
+    % w_proj = project_to_simplex_3d(w0);
+    % w'
+    % w_proj'
+    % w_true = (V' * opts.r_true).^2;
+    % w_true'
+    % norm(w - w_true)
+    % norm(w_proj - w_true)
+
+    % exitflag
+
     sqrtw = sqrt(max(w, 0));
 
     S = dec2bin(0:7) - '0';    % 8x3
@@ -72,7 +111,7 @@ function r = estimate_principal_axis(b_bar, B_bar, A_p, X)
         r_cand = r_cand / nr;
 
         % --- OPP residual ONLY (sign-sensitive cue) ---
-        J = norm(B_bar.' * r_cand - b_bar.' * u, 2)^2;
+        J = norm(B_bar.' * r_cand - b_bar.' * u)^2;
 
         if J < bestJ
             bestJ = J;
@@ -82,7 +121,7 @@ function r = estimate_principal_axis(b_bar, B_bar, A_p, X)
 
     % output
     if norm(r_best) < 1e-12
-        r = [1;0;0];  % fallback, should rarely happen
+        r = [0;0;1];  % fallback, should rarely happen
     else
         r = r_best / norm(r_best);
     end

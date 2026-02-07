@@ -13,7 +13,7 @@ load('./exp/mat_data/optimized_params_rotation.mat', 'test_points', 'b_total', '
 % b_total = b_total + b_total_bg; % 加回背景场，制造噪声
 
 params_current = params;
-params_current.uncertainty.p_uncertainty = 0.005;
+params_current.uncertainty.p_uncertainty = 0.01;
 params_current.uncertainty.r_uncertainty = 0.5;
 params_current.workspace.radius = params_current.uncertainty.p_uncertainty;
 params_current.optimization.W = eye(3);
@@ -32,7 +32,7 @@ num_trials_per_point = 1;  % 每个测试点的实验次数（用于测试不同
 % fprintf('已生成 %d 个测试点\n', num_test_points);
 
 %% ========== 批量执行实验 ==========
-batch_results = run_batch_experiments(params_current, test_points, num_trials_per_point, b_total(:, 1:6, :));
+batch_results = run_batch_experiments(params_current, test_points(:, :), num_trials_per_point, b_total(:, 1:6, :));
 
 %% ========== 结果分析 ==========
 % 计算所有测试点的总平均值
@@ -44,11 +44,11 @@ for i = 1:length(methods)
     all_summary.(m).rot_error = mean(arrayfun(@(x) x.summary.(m).rot_mean, batch_results));
     all_summary.(m).r_error = mean(arrayfun(@(x) x.summary.(m).r_mean, batch_results));
 end
-all_summary.ours.direct_r_error_RO  = mean(arrayfun(@(x) x.summary.ours.direct_r_mean_RO, batch_results));
 all_summary.ours.direct_r_error_SDP = mean(arrayfun(@(x) x.summary.ours.direct_r_mean_SDP, batch_results));
-all_summary.ours.direct_r_error_SDP_red = mean(arrayfun(@(x) x.summary.ours.direct_r_mean_SDP_reduced, batch_results));
+all_summary.ours.direct_r_error_RO  = mean(arrayfun(@(x) x.summary.ours.direct_r_mean_RO, batch_results));
 all_summary.ours.direct_r_error_spec = mean(arrayfun(@(x) x.summary.ours.direct_r_mean_spec, batch_results));
 all_summary.ours.direct_r_error_MM  = mean(arrayfun(@(x) x.summary.ours.direct_r_mean_MM, batch_results));
+all_summary.ours.direct_r_error_SSL = mean(arrayfun(@(x) x.summary.ours.direct_r_mean_SSL, batch_results));
 
 fprintf('\n========== 总平均误差 (1-abs(inner)) ==========\n');
 fprintf('Method    | Pos Error (m) | R-axis Error\n');
@@ -58,9 +58,9 @@ for i = 1:length(methods)
     fprintf('%-9s | %13.6f | %12.6f\n', upper(m), all_summary.(m).pos_error, all_summary.(m).r_error);
 end
 fprintf('%-9s | %13s | %12.6f (SCA)\n', 'OURS_DIR', '-', all_summary.ours.direct_r_error_MM);
+fprintf('%-9s | %13s | %12.6f (SSL)\n', 'OURS_DIR', '-', all_summary.ours.direct_r_error_SSL);
 fprintf('%-9s | %13s | %12.6f (RO)\n', 'OURS_DIR', '-', all_summary.ours.direct_r_error_RO);
 fprintf('%-9s | %13s | %12.6f (SDP)\n', 'OURS_DIR', '-', all_summary.ours.direct_r_error_SDP);
-fprintf('%-9s | %13s | %12.6f (SDP_RED)\n', 'OURS_DIR', '-', all_summary.ours.direct_r_error_SDP_red);
 fprintf('%-9s | %13s | %12.6f (SPEC)\n', 'OURS_DIR', '-', all_summary.ours.direct_r_error_spec);
 
 % 绘图函数：

@@ -26,7 +26,7 @@ function [prob, opts] = compute_principal_axis_prob(b_bar, B_bar, A_p, X, opts)
 if nargin < 5, opts = struct(); end
 
 % 1. Standardize core parameters
-if ~isfield(opts,'u') || isempty(opts.u), opts.u = [1;0;0]; end
+if ~isfield(opts,'u') || isempty(opts.u), opts.u = [0;0;1]; end
 u = opts.u(:); u = u / max(norm(u), eps);
 
 if ~isfield(opts,'K') || isempty(opts.K), opts.K = [1, 2]; end
@@ -35,7 +35,7 @@ K = opts.K(:)';
 if ~isfield(opts,'alpha') || isempty(opts.alpha), opts.alpha = [1, 1]; end
 alpha = opts.alpha(:)';
 
-if ~isfield(opts,'beta') || isempty(opts.beta), opts.beta = 1e3; end
+if ~isfield(opts,'beta') || isempty(opts.beta), opts.beta = 1; end
 beta = opts.beta;
 
 % 2. Symmetrize base tensors

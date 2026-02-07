@@ -67,28 +67,34 @@ alg_params = struct('R_true', R_true, 'p_true', p_true, 'mu', mu, 'beta', beta, 
 time_ours = toc;
 
 % ==== 直接估计主轴研究 (基于ours位置) ====
-% 使用 estimate_principal_axis (离散枚举) 提供更好的初始值
-r_init_disc = estimate_principal_axis(stats_ours.b_bar, stats_ours.B_bar, stats_ours.A_p, stats_ours.X_opt);
 
-% 手动切换不同的主轴估计算法
 % 初始值设为离散枚举的结果
-opts_r = struct('r0', r_init_disc, 'u', [1;0;0], 'r_true', R_true * [1;0;0]);
-% opts_r = struct('r0', R_ours * [1;0;0], 'u', [1;0;0], 'r_true', R_true * [1;0;0]);
-
-% [r_direct, ~] = estimate_principal_axis_matlabopt(stats_ours.b_bar, stats_ours.B_bar, stats_ours.A_p, stats_ours.X_opt, opts_r);
-
-% 方案2: 离散枚举法 (estimate_principal_axis)
-r_direct_spec = estimate_principal_axis(stats_ours.b_bar, stats_ours.B_bar, stats_ours.A_p, stats_ours.X_opt);
-
-% 方案3: MM迭代法 (estimate_principal_axis_SCA) / Riemannian Optimization method (RO) / matlabopt 法 / SDP 法
+opts_r = struct('u', [0;0;1]);
+opts_r.r0 = MatrixExp3(VecToso3(theta_init)) * opts_r.u; % 旋转初始主轴方向
+opts_r.r_true = R_true * opts_r.u; % 真实主轴方向
+opts_r.alpha = [1, 0];
+opts_r.beta = 1;
 [prob_r, opts_r] = compute_principal_axis_prob(stats_ours.b_bar, stats_ours.B_bar, stats_ours.A_p, stats_ours.X_opt, opts_r);
 
+r_direct_spec = estimate_principal_axis(stats_ours.b_bar, stats_ours.B_bar, stats_ours.A_p, stats_ours.X_opt, opts_r);
 [r_direct_MM, info_r_MM]   = estimate_principal_axis_SCA(prob_r, opts_r);
+[r_direct_SSL, info_r_SSL] = estimate_principal_axis_SSL(prob_r, opts_r);
 [r_direct_SDP, info_r_SDP] = estimate_principal_axis_SDP(prob_r, opts_r);
-[r_direct_SDP_reduced, info_r_SDP_red] = estimate_principal_axis_SDP_reduced(prob_r, opts_r);
-[r_direct_RO, info_r_RO] = estimate_principal_axis_TR(prob_r, opts_r);
-% [r_direct_RO, info_r_RO]   = estimate_principal_axis_RO(prob_r, opts_r);
+[r_direct_RO, info_r_RO]   = estimate_principal_axis_RO(prob_r, opts_r);
 
+% mu = 1e-6;
+% % h = @(r) r' * stats_ours.A_p * r + mu * r' * stats_ours.B_bar * stats_ours.b_bar' * opts_r.u;
+% alpha = [1, 0];
+% f = @(r) mu * norm(stats_ours.B_bar' * r - stats_ours.b_bar' * opts_r.u)^2;
+% h = @(r) r' * stats_ours.A_p * r + f(r);
+% s1 = opts_r.u' * stats_ours.X_opt * opts_r.u;
+% s2 = opts_r.u' * stats_ours.X_opt * stats_ours.X_opt * opts_r.u;
+% g = @(r) alpha(1) * (r' * stats_ours.A_p * r - s1)^2 + alpha(2) * (r' * stats_ours.A_p * stats_ours.A_p * r - s2)^2;
+% % z = @(r) 1 - abs(opts_r.r_true' * r) ;
+% f_val = [f(opts_r.r_true), f(R_ours * [0;0;1]), f(r_direct_RO), f(r_direct_spec)];
+% g_val = [g(opts_r.r_true), g(R_ours * [0;0;1]), g(r_direct_RO), g(r_direct_spec)];
+% f_val + g_val
+% h_val = [h(opts_r.r_true), h(R_ours * [0;0;1]), h(r_direct_RO), h(r_direct_spec)]
 
 tic;
 [p_fischer, R_fischer, stats_fischer] = estimate_pose_fischer(b_total, d_list, m_pos, m_hat, m_norm, theta_init, p_init, options, lb_p, ub_p, alg_params);
@@ -108,9 +114,9 @@ result.R_elm   = R_elm;
 result.p_ours  = p_ours;
 result.R_ours  = R_ours;
 result.r_direct_MM = r_direct_MM; % 存储直接估计的主轴
-result.r_direct_RO = r_direct_RO;
+result.r_direct_SSL = r_direct_SSL;
 result.r_direct_SDP = r_direct_SDP;
-result.r_direct_SDP_reduced = r_direct_SDP_reduced;
+result.r_direct_RO  = r_direct_RO;
 result.r_direct_spec = r_direct_spec;
 result.p_fischer = p_fischer;
 result.R_fischer = R_fischer;
@@ -126,44 +132,43 @@ result.time_Rlm = time_Rlm;
 
 % ==== 误差分析 ====
 % LM
-r_true = R_true * [1;0;0];
-r_true = r_true / norm(r_true);
+r_true = opts_r.r_true;
 result.lm_pos_error = norm(p_lm - p_true);
 result.lm_rot_error = norm(R_lm - R_true, 'fro');
-r_hat_lm = R_lm * [1;0;0];
+r_hat_lm = R_lm * opts_r.u;
 r_hat_lm = r_hat_lm / norm(r_hat_lm);
 result.lm_r_error = 1 - abs(r_true' * r_hat_lm); % 主轴方向误差 (1-abs(inner))
 
 % ELM
 result.elm_pos_error = norm(p_elm - p_true);
 result.elm_rot_error = norm(R_elm - R_true, 'fro');
-r_hat_elm = R_elm * [1;0;0];
+r_hat_elm = R_elm * opts_r.u;
 r_hat_elm = r_hat_elm / norm(r_hat_elm);
 result.elm_r_error = 1 - abs(r_true' * r_hat_elm); % 主轴方向误差 (1-abs(inner))
 
 % 所提算法
 result.ours_pos_error = norm(p_ours - p_true);
 result.ours_rot_error = norm(R_ours - R_true, 'fro');
-r_hat_ours = R_ours * [1;0;0];
+r_hat_ours = R_ours * opts_r.u;
 r_hat_ours = r_hat_ours / norm(r_hat_ours);
-result.ours_r_error = 1 - abs(r_true' * r_hat_ours); % PPI 或内部默认估计的r误差
+result.ours_r_error = 1 - abs(r_true' * r_hat_ours); % SSL 或内部默认估计的r误差
 result.direct_r_error_MM = 1 - abs(r_true' * r_direct_MM); % 显式直接估计的r误差
-result.direct_r_error_RO = 1 - abs(r_true' * r_direct_RO);
+result.direct_r_error_SSL = 1 - abs(r_true' * r_direct_SSL);
 result.direct_r_error_SDP = 1 - abs(r_true' * r_direct_SDP);
-result.direct_r_error_SDP_reduced = 1 - abs(r_true' * r_direct_SDP_reduced);
+result.direct_r_error_RO  = 1 - abs(r_true' * r_direct_RO);
 result.direct_r_error_spec = 1 - abs(r_true' * r_direct_spec);
 
 % Fischer
 result.fischer_pos_error = norm(p_fischer - p_true);
 result.fischer_rot_error = norm(R_fischer - R_true, 'fro');
-r_hat_fischer = R_fischer * [1;0;0];
+r_hat_fischer = R_fischer * opts_r.u;
 r_hat_fischer = r_hat_fischer / norm(r_hat_fischer);
 result.fischer_r_error = 1 - abs(r_true' * r_hat_fischer); % 主轴方向误差 (1-abs(inner))
 
 % Rlm
 result.Rlm_pos_error = norm(p_Rlm - p_true);
 result.Rlm_rot_error = norm(R_Rlm - R_true, 'fro');
-r_hat_Rlm = R_Rlm * [1;0;0];
+r_hat_Rlm = R_Rlm * opts_r.u;
 r_hat_Rlm = r_hat_Rlm / norm(r_hat_Rlm);
 result.Rlm_r_error = 1 - abs(r_true' * r_hat_Rlm); 
 

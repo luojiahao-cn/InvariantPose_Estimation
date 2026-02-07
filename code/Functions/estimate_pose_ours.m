@@ -39,19 +39,17 @@ B_bar = B_matrix * Q_bar;
 
 beta = 1e2;
 % 应该要以权重项为基准
-R_PPI = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, params.mu, beta, params.R_true); % using R_init
+R_SSL = estimateR_iter(b_bar, B_bar, A_p, X_opt, R_init, params.mu, beta, params.R_true); % using R_init
 
-% params.R_true * [1; 0; 0]
-
-R_est = R_PPI.R;
+R_est = R_SSL.R;
 stats.X_opt = X_opt;         % 估计的梯度矩阵
 stats.b_bar = b_bar;         % 测量磁场投影矩阵
 stats.B_bar = B_bar;         % 预测磁场投影矩阵
 stats.A_p = A_p;             % 位置估计处的梯度张量
 stats.R_est_init1 = R_init_est1;
 stats.R_est_init2 = R_init_est2;
-stats.R_iter_history = R_PPI.R_iter_history; % 每次迭代的R
-stats.delta_history = R_PPI.delta_history;   % 每次迭代的delta
+stats.R_iter_history = R_SSL.R_iter_history; % 每次迭代的R
+stats.delta_history = R_SSL.delta_history;   % 每次迭代的delta
 end
 
 %% ----------------------------Functions-------------------------------  %%

@@ -121,22 +121,22 @@ function summary = calculate_point_summary_from_table(T)
     
     % 特殊字段处理 (Direct R)
     summary.ours.direct_r_mean_MM  = NaN;
-    summary.ours.direct_r_mean_RO  = NaN;
+    summary.ours.direct_r_mean_SSL = NaN;
     summary.ours.direct_r_mean_SDP = NaN;
-    summary.ours.direct_r_mean_SDP_reduced = NaN;
+    summary.ours.direct_r_mean_RO  = NaN;
     summary.ours.direct_r_mean_spec = NaN;
     
     if ismember('direct_r_error_MM', var_names)
         summary.ours.direct_r_mean_MM = mean(T.direct_r_error_MM);
     end
-    if ismember('direct_r_error_RO', var_names)
-        summary.ours.direct_r_mean_RO = mean(T.direct_r_error_RO);
+    if ismember('direct_r_error_SSL', var_names)
+        summary.ours.direct_r_mean_SSL = mean(T.direct_r_error_SSL);
     end
     if ismember('direct_r_error_SDP', var_names)
         summary.ours.direct_r_mean_SDP = mean(T.direct_r_error_SDP);
     end
-    if ismember('direct_r_error_SDP_reduced', var_names)
-        summary.ours.direct_r_mean_SDP_reduced = mean(T.direct_r_error_SDP_reduced);
+    if ismember('direct_r_error_RO', var_names)
+        summary.ours.direct_r_mean_RO = mean(T.direct_r_error_RO);
     end
     if ismember('direct_r_error_spec', var_names)
         summary.ours.direct_r_mean_spec = mean(T.direct_r_error_spec);

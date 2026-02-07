@@ -1,4 +1,4 @@
-function [r_hat, info] = estimate_principal_axis_MM(prob, opts)
+function [r_hat, info] = estimate_principal_axis_SCA(prob, opts)
 % estimate_principal_axis_MM
 % principal-axis estimation on S^2 via structured MM + exact TRS.
 %

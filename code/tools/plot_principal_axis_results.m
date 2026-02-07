@@ -9,7 +9,7 @@ if nargin < 2, params = struct(); end
 %% 1. 数据提取与预处理
 num_points = length(batch_results);
 num_methods = 5;
-% method_labels = { 'Ours', 'SDP', 'SCA', 'RO', 'SPEC'};
+% method_labels = { 'Ours', 'SDP', 'RO', 'SCA', 'SPEC'};
 
 all_coords = [batch_results.test_point];
 all_p_true = [all_coords.p_true]; 
@@ -23,10 +23,10 @@ rot_error_matrix = zeros(num_points, num_methods);
 for i = 1:num_points
     if isfield(batch_results(i).summary, 'ours')
         s = batch_results(i).summary.ours;
-        rot_error_matrix(i, 4) = s.direct_r_mean_MM;           % SCA
-        rot_error_matrix(i, 3) = s.direct_r_mean_RO;           % RO
+        rot_error_matrix(i, 1) = s.direct_r_mean_SSL;          % Ours (SSL)
         rot_error_matrix(i, 2) = s.direct_r_mean_SDP;          % SDP
-        rot_error_matrix(i, 1) = s.direct_r_mean_SDP_reduced;  % Ours (SDP RED)
+        rot_error_matrix(i, 3) = s.direct_r_mean_RO;           % RO
+        rot_error_matrix(i, 4) = s.direct_r_mean_MM;           % SCA
         rot_error_matrix(i, 5) = s.direct_r_mean_spec;         % SPEC
     end
 end
@@ -50,7 +50,7 @@ function render_one_figure(title_tag, batch_results, p_avg, all_theta_true, erro
     
     num_points = length(batch_results);
     num_methods = 5;
-    method_labels = {'Ours', 'SL', 'RO', 'SCA', 'SH'};
+    method_labels = {'Ours', 'SDP', 'RO', 'SCA', 'SH'};
     fontsize = 16;
     n_colors = 256;
     % slanCM('gor') 是从绿到红的渐变，若无此函数则回退到 jet 翻转
@@ -61,7 +61,7 @@ function render_one_figure(title_tag, batch_results, p_avg, all_theta_true, erro
     end
 
     % 获取参数中的磁矩默认指向
-    m_hat = [1; 0; 0];
+    m_hat = [0; 0; 1];
     if isfield(params, 'magnet') && isfield(params.magnet, 'm_hat')
         temp_m = params.magnet.m_hat;
         m_hat = temp_m(:, 1);
@@ -73,8 +73,8 @@ function render_one_figure(title_tag, batch_results, p_avg, all_theta_true, erro
     end
 
     fig_name = sprintf('Results: %s', title_tag);
-    % 调整画布比例以容纳 5 个图
-    fig_handle = figure('Color', 'white', 'units', 'centimeters', 'Position', [2, 2, 28, 8], 'Name', fig_name);
+    % 调整画布比例以容纳 6 个图
+    fig_handle = figure('Color', 'white', 'units', 'centimeters', 'Position', [2, 2, 33, 8], 'Name', fig_name);
     tiledlayout(5, num_methods, 'Padding', 'compact');
     
     % --- 绘制 3D 矢量分布图 ---
