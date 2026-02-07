@@ -24,19 +24,20 @@ for i = 1:num_points
     if isfield(batch_results(i).summary, 'ours')
         s = batch_results(i).summary.ours;
         rot_error_matrix(i, 1) = s.direct_r_mean_SSL;          % Ours (SSL)
-        rot_error_matrix(i, 2) = s.direct_r_mean_SDP;          % SDP
+        rot_error_matrix(i, 5) = s.direct_r_mean_SDP;          % SDP
         rot_error_matrix(i, 3) = s.direct_r_mean_RO;           % RO
         rot_error_matrix(i, 4) = s.direct_r_mean_MM;           % SCA
-        rot_error_matrix(i, 5) = s.direct_r_mean_spec;         % SPEC
+        rot_error_matrix(i, 2) = s.direct_r_mean_spec;         % SPEC
     end
 end
 
 % 归一化误差到[0,1]用于颜色映射 (越绿误差越小，越红越大)
-delta_err = 0.25; 
 err_clamped = rot_error_matrix;
+delta_err = 0.2; 
 err_clamped(err_clamped > delta_err) = delta_err;
 % 这里直接归一化到 [0, 0.5] 范围
-error_norm = err_clamped / delta_err; 
+error_norm = err_clamped / delta_err;
+% error_norm = rot_error_matrix/max(rot_error_matrix(:));
 
 %% 2. 绘图执行
 render_one_figure('Principal Axis Estimation', batch_results, p_avg, all_theta_true, error_norm, ...
@@ -50,7 +51,7 @@ function render_one_figure(title_tag, batch_results, p_avg, all_theta_true, erro
     
     num_points = length(batch_results);
     num_methods = 5;
-    method_labels = {'Ours', 'SDP', 'RO', 'SCA', 'SH'};
+    method_labels = {'Ours', 'SH', 'RO', 'SCA', 'SDP'};
     fontsize = 16;
     n_colors = 256;
     % slanCM('gor') 是从绿到红的渐变，若无此函数则回退到 jet 翻转
@@ -149,7 +150,7 @@ function render_one_figure(title_tag, batch_results, p_avg, all_theta_true, erro
     cb.Label.Interpreter = 'latex';
     cb.Label.FontSize = fontsize;
     cb.Ticks = [0, 0.5, 1]; 
-    cb.TickLabels = {'0', '$e_{\mbox{\boldmath{$r$}}}$ [rad]', '$\geq 0.25$'};
+    cb.TickLabels = {'0', '$e_{\mbox{\boldmath{$r$}}}$ [rad]', '$\geq 0.2$'};
     cb.TickLabelInterpreter = 'latex';
     colormap(custom_colormap);
 

@@ -42,8 +42,8 @@ function r = estimate_principal_axis(b_bar, B_bar, A_p, X, opts)
 
     % robust initial guess
     % w0 = ones(3,1)/3;
-    % w0 = C\h;  % unconstrained solution as initial guess
-    w0 = (V' * opts.r0).^2;
+    w0 = C\h;  % unconstrained solution as initial guess
+    % w0 = (V' * opts.r0).^2;
 
     % % lsqlin options
     opts_lsqlin = optimoptions('lsqlin', ...
@@ -51,10 +51,10 @@ function r = estimate_principal_axis(b_bar, B_bar, A_p, X, opts)
         'Algorithm','active-set');   % or 'active-set'
 
     % % Solve: min ||C w - b||^2  s.t.  w>=0, sum(w)=1
-    C_bar = [C; eye(3)];
-    h_bar = [h; w0];
-    % w = lsqlin(C, h, [], [], Aeq, beq, lb, ub, w0, opts_lsqlin);
-    w = lsqlin(C_bar, h_bar, [], [], Aeq, beq, lb, ub, w0, opts_lsqlin);
+    % C_bar = C;
+    % h_bar = h;
+    w = lsqlin(C, h, [], [], Aeq, beq, lb, ub, w0, opts_lsqlin);
+    % w = lsqlin(C_bar, h_bar, [], [], Aeq, beq, lb, ub, w0, opts_lsqlin);
 
     % % fallback if solver fails (rare)
     % if exitflag <= 0 || any(~isfinite(w))
