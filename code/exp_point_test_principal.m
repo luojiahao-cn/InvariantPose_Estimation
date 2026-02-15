@@ -9,7 +9,7 @@ addpath('./exp')
 % 设置随机种子
 % rng(params.experiment.random_seed);
 load('./exp/mat_data/optimized_params.mat', 'params');
-load('./exp/mat_data/optimized_params_rotation.mat', 'test_points', 'b_total', 'b_total_bg');
+load('./exp/mat_data/optimized_params_cone.mat', 'test_points', 'b_total', 'b_total_bg');
 % b_total = b_total + b_total_bg; % 加回背景场，制造噪声
 
 params_current = params;
@@ -20,7 +20,7 @@ params_current.optimization.W = eye(3);
 params_current.optimization.options.FunctionTolerance = 1e-8;
 params_current.optimization.options.StepTolerance = 1e-8;
 params_current.optimization.mu = 1e-3;
-params_current.sensor.d_list = params.sensor.d_list(:, [2,3,6]); % [2,3,6], [1:12], [1:6]
+params_current.sensor.d_list = params.sensor.d_list(:, 1:12);
 %% ========== 实验设置 ==========
 num_trials_per_point = 1;  % 每个测试点的实验次数（用于测试不同初始值）
 % 生成方法选项：
@@ -32,7 +32,7 @@ num_trials_per_point = 1;  % 每个测试点的实验次数（用于测试不同
 % fprintf('已生成 %d 个测试点\n', num_test_points);
 
 %% ========== 批量执行实验 ==========
-batch_results = run_batch_experiments(params_current, test_points(:, :), num_trials_per_point, b_total(:, [2,3,6], :));
+batch_results = run_batch_experiments(params_current, test_points(:, :), num_trials_per_point, b_total(:, 1:12, :));
 
 %% ========== 结果分析 ==========
 % 计算所有测试点的总平均值
@@ -68,7 +68,9 @@ fprintf('%-9s | %13s | %12.6f (SPEC)\n', 'OURS_DIR', '-', all_summary.ours.direc
 % plot_batch_results(batch_results, [test_points.p_true], params);
 
 % 2. 主轴对比版：重点展示 SCA, RO, SDP, SDP RED (ours), SPEC 的指向估计性能
-plot_principal_axis_results(batch_results, params_current);
+% plot_principal_axis_results(batch_results, params_current);
+
+plot_principal_axis_results_cone(batch_results, params_current);
 
 % 3. 文本标注版：将误差统计信息 (mean ± std) 直接显示在子图标题中
 % plot_batch_results_text(batch_results, [test_points.p_true], params);

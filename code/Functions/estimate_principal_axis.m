@@ -2,7 +2,7 @@ function r = estimate_principal_axis(b_bar, B_bar, A_p, X, opts)
 % Principal-axis estimator (paper-aligned):
 %   - use (s1,s2) invariants to solve w
 %   - enumerate finite candidates z (modulo z ~ -z)
-%   - select by OPP residual only (odd/sign-sensitive cue)
+%   - select by joint cost (invariant consistency + OPP residual)
 %
 % Inputs:
 %   B_bar : 3xm   predicted \bbs B(\hat p)
@@ -13,6 +13,21 @@ function r = estimate_principal_axis(b_bar, B_bar, A_p, X, opts)
 %   r     : 3x1   (undirected) principal axis in world frame
 
     u = opts.u;
+
+    % --- extract weights (standardized) ---
+    if isfield(opts, 'alpha') && ~isempty(opts.alpha)
+        alpha = opts.alpha;
+    else
+        alpha = [1, 1];
+    end
+    if length(alpha) < 2
+        alpha(2) = 0; % safety pad
+    end
+    if isfield(opts, 'beta') && ~isempty(opts.beta)
+        beta = opts.beta;
+    else
+        beta = 1;
+    end
 
     % --- enforce symmetry (numerical stability) ---
     A_p = 0.5 * (A_p + A_p');
@@ -27,6 +42,8 @@ function r = estimate_principal_axis(b_bar, B_bar, A_p, X, opts)
     % --- invariants from X ---
     s1 = u' * X * u;
     s2 = u' * (X*X) * u;
+    
+    A_p2 = A_p * A_p; % precompute A^2 for cost evaluation
 
     % --- solve for w on the simplex directly (w>=0, sum(w)=1) ---
     C = [ 1,        1,        1;
@@ -110,8 +127,13 @@ function r = estimate_principal_axis(b_bar, B_bar, A_p, X, opts)
         end
         r_cand = r_cand / nr;
 
-        % --- OPP residual ONLY (sign-sensitive cue) ---
-        J = norm(B_bar.' * r_cand - b_bar.' * u)^2;
+        % --- Complete residual: Fourth-power (invariants) + OPP ---
+        % Consistent with other solvers (SCA, RO, SSL, SDP)
+        J_inv = alpha(1) * (r_cand' * A_p * r_cand - s1)^2 + ...
+                alpha(2) * (r_cand' * A_p2 * r_cand - s2)^2;
+        
+        J_opp = beta * norm(B_bar.' * r_cand - b_bar.' * u)^2;
+        J = J_inv + J_opp;
 
         if J < bestJ
             bestJ = J;

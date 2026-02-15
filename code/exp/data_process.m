@@ -44,11 +44,33 @@ d_list = d_list - mean(d_list, 2);
 % % draw_axes(d_list(:,12), R.R4);
 % scatter3(d_list(1,:), d_list(2,:), d_list(3,:), 'filled');
 %%
-load('./exp/mat_data/scan_records_rotation.mat', 'scan_records');
-[b_total, p_true, R_true, m_hat, m_pos, test_points, radius] = process_matrix(scan_records, R);
+load('./mat_data/scan_records_cone.mat', 'scan_records');
+scan_records_cone = scan_records;
+load('./mat_data/scan_records_cone_bg.mat', 'scan_records');
+scan_records_bg = scan_records;
 
-load('./exp/mat_data/scan_records_rotation_bg.mat', 'scan_records');
-b_total_bg = process_matrix(scan_records, R);
+% 找出不匹配的元素并按最少结果对齐
+ids_cone = string({scan_records_cone.target_id});
+ids_bg = string({scan_records_bg.target_id});
+
+extra_in_cone = setdiff(ids_cone, ids_bg);
+extra_in_bg = setdiff(ids_bg, ids_cone);
+
+if ~isempty(extra_in_cone)
+    fprintf('Extra points in cone: %s\n', strjoin(extra_in_cone, ', '));
+end
+if ~isempty(extra_in_bg)
+    fprintf('Extra points in cone_bg: %s\n', strjoin(extra_in_bg, ', '));
+end
+
+[common_ids, idx_cone, idx_bg] = intersect(ids_cone, ids_bg, 'stable');
+fprintf('Aligned to %d common points.\n', length(common_ids));
+
+scan_records_cone = scan_records_cone(idx_cone);
+scan_records_bg = scan_records_bg(idx_bg);
+
+[b_total, p_true, R_true, m_hat, m_pos, test_points, radius] = process_matrix(scan_records_cone, R);
+b_total_bg = process_matrix(scan_records_bg, R);
 
 b_total = b_total - b_total_bg;
 b_total = b_total * 1e-4; % 从Gs转换为特斯拉
@@ -137,7 +159,7 @@ ylabel('Column Index');
 %     quiver3(p_true(1, i), p_true(2, i), p_true(3, i), b_p_sim(1, i), b_p_sim(2, i), b_p_sim(3, i), 1e1, 'b');
 % end
 
-save('optimized_params_rotation.mat', 'params', 'test_points', 'b_total', 'b_total_bg');
+save('optimized_params_cone.mat', 'params', 'test_points', 'b_total', 'b_total_bg');
 
 for idx = 1:size(b_total, 3)
 

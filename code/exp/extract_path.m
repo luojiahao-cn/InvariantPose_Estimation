@@ -1,7 +1,7 @@
 clc,clear,close all
 
 % 1. 加载数据
-load('optimized_params_1.mat', 'test_points');
+load('../exp/mat_data/optimized_params_1.mat', 'test_points');
 p_all = cat(2, test_points.p_true);
 
 p_ind = 1:1000;
@@ -19,70 +19,84 @@ end
 
 p_all = p_all(:, p_ind); % 重新排序点
 
-% --- 自动寻找最接近 +/- 0.05 的网格索引 ---
-target_coord = 0.05;
-% 重新构建 x, y, z 的坐标向量 (均匀分布)
+% --- 3. 定义嵌套立方体路径 (4层) ---
+layers_lo = [5, 4, 3, 2]; % 每层最小索引 (内到外)
+layers_hi = [6, 7, 8, 9]; % 每层最大索引 (内到外)
 x_coords = linspace(-0.1, 0.1, 10); 
-[~, i_min] = min(abs(x_coords - (-target_coord)));
-[~, i_max] = min(abs(x_coords - target_coord));
+grid_sz = [10, 10, 10];
 
-% 为了美观和对称，我们统一使用这些索引
-j_min = i_min; j_max = i_max;
-k_min = i_min; k_max = i_max; 
+all_grid_path = [];
+cubic_path_ideal = [];
 
-fprintf('找到的最佳网格索引: %d 到 %d (对应物理坐标约 %.3f 到 %.3f)\n', ...
-    i_min, i_max, x_coords(i_min), x_coords(i_max));
-
-% 3. 定义路径的关键顶点 (按照用户指定的顺序)
-% V1(-L,-L,-L) -> V2(-L,L,-L) -> V3(-L,L,L) -> V4(-L,-L,L) -> V5(L,-L,L) -> V6(L,L,L) -> V7(L,L,-L) -> V8(L,-L,-L) -> V9(START)
-nodes = [
-    i_min, j_min, k_min; % V1
-    i_min, j_max, k_min; % V2
-    i_min, j_max, k_max; % V3
-    i_min, j_min, k_max; % V4
-    i_max, j_min, k_max; % V5
-    i_max, j_max, k_max; % V6
-    i_max, j_max, k_min; % V7
-    i_max, j_min, k_min; % V8: 与 START 齐平 (同 Y, Z)
-    i_min, j_min, k_min  % V9: 回到起点 START，完成路径闭合
-];
-
-% 4. 逐段生成路径格点
-grid_path = [];
-for s = 1:size(nodes, 1)-1
-    p1 = nodes(s, :);
-    p2 = nodes(s+1, :);
+for L = 1:length(layers_lo)
+    i_min = layers_lo(L); i_max = layers_hi(L);
+    j_min = i_min; j_max = i_max;
+    k_min = i_min; k_max = i_max;
     
-    diff_dim = find(p1 ~= p2);
-    if isempty(diff_dim)
-        segment = p1';
-    else
-        v1 = p1(diff_dim);
-        v2 = p2(diff_dim);
-        step = sign(v2 - v1);
-        vals = v1:step:v2;
-        segment = repmat(p1', 1, length(vals));
-        segment(diff_dim, :) = vals;
+    % 定义当前层立方体的 8 个顶点顺序
+    nodes = [
+        i_min, j_min, k_min; % V1
+        i_min, j_max, k_min; % V2
+        i_min, j_max, k_max; % V3
+        i_min, j_min, k_max; % V4
+        i_max, j_min, k_max; % V5
+        i_max, j_max, k_max; % V6
+        i_max, j_max, k_min; % V7
+        i_max, j_min, k_min; % V8
+        i_min, j_min, k_min  % 回到层起点
+    ];
+    
+    % 记录理想物理轨迹 (用于绘图)
+    cubic_path_ideal = [cubic_path_ideal, x_coords(nodes)'];
+    
+    % 4. 逐段生成当前层的格点
+    for s = 1:size(nodes, 1)-1
+        p1 = nodes(s, :); p2 = nodes(s+1, :);
+        diff_dim = find(p1 ~= p2);
+        if isempty(diff_dim)
+            segment = p1';
+        else
+            v1 = p1(diff_dim); v2 = p2(diff_dim);
+            step = sign(v2 - v1);
+            vals = v1:step:v2;
+            segment = repmat(p1', 1, length(vals));
+            segment(diff_dim, :) = vals;
+        end
+        all_grid_path = [all_grid_path, segment];
     end
-    grid_path = [grid_path, segment];
+    
+    % --- 重新应用：层间直角连接桥 (Axial Bridge) ---
+    if L < length(layers_lo)
+        p_current_end = nodes(end, :); 
+        p_next_start_val = layers_lo(L+1);
+        
+        % 生成直角转弯的三个关键支撑点
+        bridge_steps = [
+            p_next_start_val, p_current_end(2), p_current_end(3); % 移到下一层的 X
+            p_next_start_val, p_next_start_val, p_current_end(3); % 移到下一层的 Y
+            p_next_start_val, p_next_start_val, p_next_start_val  % 移到下一层的 Z
+        ];
+        
+        % 将桥接点加入逻辑路径
+        all_grid_path = [all_grid_path, bridge_steps'];
+        
+        % 将桥接点加入理想物理轨迹 (不放 NaN，使其在视觉上连通)
+        bridge_phys = x_coords(bridge_steps)';
+        cubic_path_ideal = [cubic_path_ideal, bridge_phys];
+    end
 end
 
 % 5. 转换为线性索引并去重
-grid_sz = [10, 10, 10];
-path_indices = sub2ind(grid_sz, grid_path(1,:), grid_path(2,:), grid_path(3,:));
+path_indices = sub2ind(grid_sz, all_grid_path(1,:), all_grid_path(2,:), all_grid_path(3,:));
 path_indices = unique(path_indices, 'stable'); 
 
-% 6. 还原回最原始（物理扫描顺序）的索引
-% path_indices 是在纠偏后的 p_all 中的位置
-% p_ind(path_indices) 对应在原始 scan_records/test_points 里的原始位置
+% 6. 还原回原始与纠偏后的索引
 cubic_path_raw = p_ind(path_indices)'; 
-cubic_path = path_indices'; % 纠偏后的逻辑索引
+cubic_path = path_indices'; 
 
-% --- 理想路径 (Physical Ideal Path) ---
-% 将网格顶点索引转换为物理坐标，用于后续绘制理想轨迹线
-cubic_path_ideal = x_coords(nodes)'; 
+% --- 理想路径已在循环中生成 ---
 
-save('path_ind.mat', 'cubic_path_raw', 'cubic_path', 'cubic_path_ideal', '-append');
+save('./mat_data/path_ind.mat', 'cubic_path_raw', 'cubic_path', 'cubic_path_ideal', '-append');
 fprintf('生成成功！数据已保存：\n - cubic_path: 矫正后的几何索引\n - cubic_path_ideal: 理想物理路径 (8点顶点顺序)\n');
 
 % 7. 可视化：按顺序绘制点并标记轨迹

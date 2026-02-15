@@ -8,14 +8,15 @@ addpath('./exp')
 % params = get_experiment_params();
 % 设置随机种子
 % rng(params.experiment.random_seed);
-load('./exp/optimized_params.mat', 'params', 'test_points', 'b_total', 'b_total_bg');
-data = load('./exp/path_ind.mat', 'magnetic_path_raw', 'magnetic_path_ideal');
-path_raw = data.magnetic_path_raw;
-path_raw_ideal = data.magnetic_path_ideal;
+load('./exp/mat_data/optimized_params.mat', 'params', 'test_points', 'b_total', 'b_total_bg');
+% data = load('./exp/path_ind.mat', 'magnetic_path_raw', 'magnetic_path_ideal');
+data = load('./exp/mat_data/path_ind.mat', 'cubic_path_raw', 'cubic_path_ideal');
+path_raw = data.cubic_path_raw;
+path_raw_ideal = data.cubic_path_ideal;
 % b_total = b_total + b_total_bg; % 加回背景场，制造噪声
 
 params_current = params;
-params_current.uncertainty.p_uncertainty = 0.005;
+params_current.uncertainty.p_uncertainty = 0.01;
 params_current.uncertainty.r_uncertainty = 0.5;
 params_current.workspace.radius = params_current.uncertainty.p_uncertainty;
 params_current.optimization.W = eye(3);
@@ -87,7 +88,12 @@ fprintf('%-9s | %13s | %12.6f (SPEC)\n', 'OURS_DIR', '-', all_summary.ours.direc
 % 4. 2D 投影版：仅绘制当前层 (highlight)，保留 ep/er 的 boxchart
 % plot_batch_results_2d(batch_results, path_raw_ideal, params_current);
 
-% %% ========== 保存结果 ==========
+% 5. 路径对比版：对比 Ours (SSL), LM, ELM, RLM, Fischer
+% 如果不想跑实验，可以直接加载已有结果：
+% load('results/path_cubic_nested.mat', 'batch_results', 'params');
+plot_path_comparison(batch_results, params_current);
+
+%% ========== 保存结果 ==========
 % save('results/exp1_batch_results.mat', 'batch_results', 'test_points', 'params');
 
 % fprintf('\n结果已保存到 results/exp1_batch_results.mat\n');
