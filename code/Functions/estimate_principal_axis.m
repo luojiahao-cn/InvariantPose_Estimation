@@ -60,7 +60,6 @@ function r = estimate_principal_axis(b_bar, B_bar, A_p, X, opts)
     % robust initial guess
     % w0 = ones(3,1)/3;
     w0 = C\h;  % unconstrained solution as initial guess
-    % w0 = (V' * opts.r0).^2;
 
     % % lsqlin options
     opts_lsqlin = optimoptions('lsqlin', ...

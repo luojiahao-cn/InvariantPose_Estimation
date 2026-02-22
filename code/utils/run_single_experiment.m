@@ -78,9 +78,11 @@ opts_r.beta = 1;
 
 r_direct_spec = estimate_principal_axis(stats_ours.b_bar, stats_ours.B_bar, stats_ours.A_p, stats_ours.X_opt, opts_r);
 [r_direct_MM, info_r_MM]   = estimate_principal_axis_SCA(prob_r, opts_r);
-[r_direct_SSL, info_r_SSL] = estimate_principal_axis_SSL(prob_r, opts_r);
 [r_direct_SDP, info_r_SDP] = estimate_principal_axis_SDP(prob_r, opts_r);
 [r_direct_RO, info_r_RO]   = estimate_principal_axis_RO(prob_r, opts_r);
+% prob_r.r0 = r_direct_spec; % 将 SPEC 结果作为 SSL 的初始值
+[r_direct_SSL, info_r_SSL] = estimate_principal_axis_SSL(prob_r, opts_r);
+
 
 % mu = 1e-6;
 % % h = @(r) r' * stats_ours.A_p * r + mu * r' * stats_ours.B_bar * stats_ours.b_bar' * opts_r.u;

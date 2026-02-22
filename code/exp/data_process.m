@@ -44,9 +44,9 @@ d_list = d_list - mean(d_list, 2);
 % % draw_axes(d_list(:,12), R.R4);
 % scatter3(d_list(1,:), d_list(2,:), d_list(3,:), 'filled');
 %%
-load('./mat_data/scan_records_cone.mat', 'scan_records');
+load('./exp/mat_data/scan_records_cone.mat', 'scan_records');
 scan_records_cone = scan_records;
-load('./mat_data/scan_records_cone_bg.mat', 'scan_records');
+load('./exp/mat_data/scan_records_cone_bg.mat', 'scan_records');
 scan_records_bg = scan_records;
 
 % 找出不匹配的元素并按最少结果对齐
