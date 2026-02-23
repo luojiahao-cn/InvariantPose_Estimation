@@ -17,7 +17,10 @@ R_init = MatrixExp3(VecToso3(theta_init));
 num_sensors = size(b_total, 2);
 %% 构建磁场差矩阵和位移矩阵
 [X_opt, ~, D_delta, B_delta] = lc_grad_tensor_estimator(b_total, d_list);
-
+%% 阶段检查 对应公式2
+[~, A_p_true] = calcFieldAndGradient(params.p_true, m_pos, m_hat, m_norm);
+R_true = params.R_true;
+X_true = R_true'*A_p_true*R_true;
 %% Stage #1: Estimate for position \hat{p}
 [Q, ~, ~] = qr(d_list'); % Note: must return 3 outputs even we only need Q
 r = rank(d_list); % 构型判据

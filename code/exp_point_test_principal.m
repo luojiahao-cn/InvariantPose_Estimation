@@ -8,8 +8,8 @@ addpath('./exp')
 % params = get_experiment_params();
 % 设置随机种子
 % rng(params.experiment.random_seed);
-load('./exp/mat_data/optimized_params.mat', 'params');
-load('./exp/mat_data/optimized_params_cone.mat', 'test_points', 'b_total', 'b_total_bg');
+% load('./exp/mat_data/optimized_params.mat', 'params');
+load('./exp/mat_data/optimized_params_cone.mat', 'test_points', 'b_total', 'b_total_bg', 'params');
 % b_total = b_total + b_total_bg; % 加回背景场，制造噪声
 
 params_current = params;
@@ -20,8 +20,8 @@ params_current.optimization.W = eye(3);
 params_current.optimization.options.FunctionTolerance = 1e-8;
 params_current.optimization.options.StepTolerance = 1e-8;
 params_current.optimization.mu = 1e-3;
-% d_list_ind = [1:12];
-d_list_ind = [2,3,6];
+d_list_ind = [1:12];
+% d_list_ind = [2,3,6];
 params_current.sensor.d_list = params.sensor.d_list(:, d_list_ind);
 % params_current.sensor.d_list = params.sensor.d_list(:, [1,2,3,7,8,9]);
 %% ========== 实验设置 ==========
