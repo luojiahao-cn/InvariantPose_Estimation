@@ -19,6 +19,15 @@ function [X_opt, x_opt, D_delta, B_delta] = lc_grad_tensor_estimator(b_total, d_
     % 构建完整约束矩阵C
     C_matrix = kron(D_delta', eye(3)) * S;
 
+    P = D_delta * D_delta';
+
+    [V, D] = eig(P);
+    
+    % u = [1;0;0];
+    % syms ux uy uz real
+    % u = [ux; uy; uz];
+    % kron(u, u)' * (S / (S' * kron(P, eye(3)) * S)) * S' * kron(u, u)
+
     if rank(C_matrix) < 5
         warning('lc_grad_tensor_estimator:rankDeficient', ...
             'Gradient system matrix C is rank deficient. Sensor geometry may be ill conditioned.');
