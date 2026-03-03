@@ -72,7 +72,6 @@ time_ours = toc;
 opts_r = struct('u', [0;0;1]);
 opts_r.r0 = MatrixExp3(VecToso3(theta_init)) * opts_r.u; % 旋转初始主轴方向
 opts_r.r_true = R_true * opts_r.u; % 真实主轴方向
-opts_r.alpha = [1, 0];
 opts_r.beta = 1;
 [prob_r, opts_r] = compute_principal_axis_prob(stats_ours.b_bar, stats_ours.B_bar, stats_ours.A_p, stats_ours.X_opt, opts_r);
 
