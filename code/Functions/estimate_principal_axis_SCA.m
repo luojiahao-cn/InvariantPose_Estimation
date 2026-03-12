@@ -12,7 +12,7 @@ function [r_hat, info] = estimate_principal_axis_SCA(prob, opts)
 if nargin < 2, opts = struct(); end
 
 % ---------------- solver options ----------------
-if ~isfield(opts,'maxIter') || isempty(opts.maxIter), opts.maxIter = 100; end
+if ~isfield(opts,'maxIter') || isempty(opts.maxIter), opts.maxIter = 500; end
 maxIter = opts.maxIter;
 
 if ~isfield(opts,'tol') || isempty(opts.tol), opts.tol = 1e-8; end

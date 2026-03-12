@@ -124,7 +124,16 @@ function summary = calculate_point_summary_from_table(T)
     summary.ours.direct_r_mean_SSL = NaN;
     summary.ours.direct_r_mean_SDP = NaN;
     summary.ours.direct_r_mean_RO  = NaN;
+    summary.ours.direct_r_mean_RGD = NaN;
     summary.ours.direct_r_mean_spec = NaN;
+    summary.ours.direct_time_mean_SCA = NaN;
+    summary.ours.direct_time_std_SCA  = NaN;
+    summary.ours.direct_time_mean_SSL = NaN;
+    summary.ours.direct_time_std_SSL  = NaN;
+    summary.ours.direct_time_mean_RO  = NaN;
+    summary.ours.direct_time_std_RO   = NaN;
+    summary.ours.direct_time_mean_RGD = NaN;
+    summary.ours.direct_time_std_RGD  = NaN;
     
     if ismember('direct_r_error_MM', var_names)
         summary.ours.direct_r_mean_MM = mean(T.direct_r_error_MM);
@@ -137,9 +146,28 @@ function summary = calculate_point_summary_from_table(T)
     end
     if ismember('direct_r_error_RO', var_names)
         summary.ours.direct_r_mean_RO = mean(T.direct_r_error_RO);
+        % 兼容将 RO 称为 RGD 的命名
+        summary.ours.direct_r_mean_RGD = summary.ours.direct_r_mean_RO;
     end
     if ismember('direct_r_error_spec', var_names)
         summary.ours.direct_r_mean_spec = mean(T.direct_r_error_spec);
+    end
+
+    % 特殊字段处理 (Direct R 时间)
+    if ismember('time_SCA', var_names)
+        summary.ours.direct_time_mean_SCA = mean(T.time_SCA);
+        summary.ours.direct_time_std_SCA  = std(T.time_SCA);
+    end
+    if ismember('time_SSL', var_names)
+        summary.ours.direct_time_mean_SSL = mean(T.time_SSL);
+        summary.ours.direct_time_std_SSL  = std(T.time_SSL);
+    end
+    if ismember('time_RO', var_names)
+        summary.ours.direct_time_mean_RO  = mean(T.time_RO);
+        summary.ours.direct_time_std_RO   = std(T.time_RO);
+        % 兼容将 RO 称为 RGD 的命名
+        summary.ours.direct_time_mean_RGD = summary.ours.direct_time_mean_RO;
+        summary.ours.direct_time_std_RGD  = summary.ours.direct_time_std_RO;
     end
 end
 

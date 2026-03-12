@@ -23,8 +23,8 @@ function plot_principal_axis_results_cone(batch_results, params)
 % end
 
 num_points = length(batch_results);
-method_tags = {'ours', 'ro', 'sca', 'lm', 'elm'};
-method_labels = {'Ours (SSL)', 'RO', 'SCA', '(3)', '(6)'};
+method_tags = {'ours', 'rgd', 'sca', 'lm', 'elm'};
+method_labels = {'Ours (SSL)', 'RGD', 'SCA', '(3)', '(6)'};
 num_methods = length(method_tags);
 
 % 提取真实轨迹与理论主轴方向 (针对 Cone 轨迹，理论主轴 r 应与位置 p 方向一致)
@@ -46,8 +46,8 @@ for i = 1:num_points
     for j = 1:num_methods
         tag = method_tags{j};
         
-        % 位置误差：ours, ro, sca 使用相同的 p_ours
-        if strcmp(tag, 'ro') || strcmp(tag, 'sca')
+        % 位置误差：ours, rgd, sca 使用相同的 p_ours
+        if strcmp(tag, 'rgd') || strcmp(tag, 'sca')
             if isfield(s, 'ours'), pos_err_mat(i, j) = s.ours.pos_mean; end
         elseif isfield(s, tag)
             pos_err_mat(i, j) = s.(tag).pos_mean;
@@ -62,10 +62,12 @@ for i = 1:num_points
              else
                 rot_err_mat(i, j) = s.ours.r_mean;
              end
-        elseif strcmp(tag, 'ro')
-             if isfield(s.ours, 'direct_r_mean_RO')
-                rot_err_mat(i, j) = s.ours.direct_r_mean_RO;
-             end
+          elseif strcmp(tag, 'rgd')
+                 if isfield(s.ours, 'direct_r_mean_RGD')
+                     rot_err_mat(i, j) = s.ours.direct_r_mean_RGD;
+                 elseif isfield(s.ours, 'direct_r_mean_RO')
+                     rot_err_mat(i, j) = s.ours.direct_r_mean_RO;
+                 end
         elseif strcmp(tag, 'sca')
              if isfield(s.ours, 'direct_r_mean_MM')
                 rot_err_mat(i, j) = s.ours.direct_r_mean_MM;

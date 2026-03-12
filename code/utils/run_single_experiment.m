@@ -76,11 +76,21 @@ opts_r.beta = 1;
 [prob_r, opts_r] = compute_principal_axis_prob(stats_ours.b_bar, stats_ours.B_bar, stats_ours.A_p, stats_ours.X_opt, opts_r);
 
 r_direct_spec = estimate_principal_axis(stats_ours.b_bar, stats_ours.B_bar, stats_ours.A_p, stats_ours.X_opt, opts_r);
+
+tic;
 [r_direct_MM, info_r_MM]   = estimate_principal_axis_SCA(prob_r, opts_r);
+time_SCA = toc;
+
 [r_direct_SDP, info_r_SDP] = estimate_principal_axis_SDP(prob_r, opts_r);
+
+tic;
 [r_direct_RO, info_r_RO]   = estimate_principal_axis_RO(prob_r, opts_r);
+time_RO = toc;
+
 % prob_r.r0 = r_direct_spec; % 将 SPEC 结果作为 SSL 的初始值
+tic;
 [r_direct_SSL, info_r_SSL] = estimate_principal_axis_SSL(prob_r, opts_r);
+time_SSL = toc;
 
 
 % mu = 1e-6;
@@ -130,6 +140,9 @@ result.time_elm = time_elm;
 result.time_ours = time_ours;
 result.time_fischer = time_fischer;
 result.time_Rlm = time_Rlm;
+result.time_SCA = time_SCA;
+result.time_RO = time_RO;
+result.time_SSL = time_SSL;
 
 % ==== 误差分析 ====
 % LM
