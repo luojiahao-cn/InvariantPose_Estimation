@@ -81,5 +81,16 @@ grid on;
 set(gca, 'FontSize', fontsize, 'TickDir', 'out', 'LineWidth', 1);
 %%
 % export_fig('../../figures/init_results_config1.png', '-png', '-r600', '-nocrop');
+
+%% 输出各方法耗时的均值和标准差
+fprintf('\n========== 各方法耗时统计 ==========\n');
+fprintf('%-10s %12s %12s\n', '方法', '均值 [ms]', '标准差 [ms]');
+fprintf('-------------------------------------\n');
+for j = 1:num_methods
+    t_mean = mean(time_matrix(:, j)) * 1e3;
+    t_std  = std(time_matrix(:, j)) * 1e3;
+    fprintf('%-10s %12.4f %12.4f\n', method_labels{j}, t_mean, t_std);
+end
+fprintf('=====================================\n');
 end
 
