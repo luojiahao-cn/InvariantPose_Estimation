@@ -54,7 +54,7 @@ batch_results = run_batch_experiments(params_current, test_points_raw, num_trial
 % plot_batch_results_grouped(batch_results, path_raw_ideal, params);
 
 % 3. 文本标注版：去掉了箱线图，将误差统计信息 (mean ± std) 直接显示在子图标题中
-% plot_batch_results_text(batch_results, path_raw_ideal, params);
+plot_batch_results_text(batch_results, path_raw_ideal, params);
 
 % 4. 2D 投影版：仅绘制当前层 (highlight)，保留 ep/er 的 boxchart
 % plot_batch_results_2d(batch_results, path_raw_ideal, params_current);
