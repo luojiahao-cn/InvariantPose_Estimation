@@ -8,8 +8,8 @@ addpath('./exp')
 % params = get_experiment_params();
 % 设置随机种子
 % rng(params.experiment.random_seed);
-load('./exp/optimized_params.mat', 'params', 'test_points', 'b_total', 'b_total_bg');
-data = load('./exp/path_ind.mat', 'magnetic_path_raw', 'magnetic_path_ideal');
+load('./exp/mat_data/optimized_params.mat', 'params', 'test_points', 'b_total', 'b_total_bg');
+data = load('./exp/mat_data/path_ind.mat', 'magnetic_path_raw', 'magnetic_path_ideal');
 path_raw = data.magnetic_path_raw;
 path_raw_ideal = data.magnetic_path_ideal;
 % b_total = b_total + b_total_bg; % 加回背景场，制造噪声
@@ -40,7 +40,7 @@ num_trials_per_point = 1;  % 每个测试点的实验次数（用于测试不同
 b_total = b_total(:, :, path_raw);
 b_total_bg = b_total_bg(:, :, path_raw);
 % 静磁场下LM就炸了
-% b_total = b_total - b_total_bg
+% b_total = b_total + b_total_bg;
 
 %% ========== 批量执行实验 ==========
 batch_results = run_batch_experiments(params_current, test_points_raw, num_trials_per_point, b_total);
@@ -50,14 +50,11 @@ batch_results = run_batch_experiments(params_current, test_points_raw, num_trial
 % 1. 标准版：生成全景图和分字母图
 % plot_batch_results(batch_results, path_raw_ideal, params);
 
-% 2. 分组版：分为 MAG 和 NET 两组绘制，x轴范围自适应调整
-% plot_batch_results_grouped(batch_results, path_raw_ideal, params);
-
 % 3. 文本标注版：去掉了箱线图，将误差统计信息 (mean ± std) 直接显示在子图标题中
-plot_batch_results_text(batch_results, path_raw_ideal, params);
+% plot_batch_results_text(batch_results, path_raw_ideal, params);
 
 % 4. 2D 投影版：仅绘制当前层 (highlight)，保留 ep/er 的 boxchart
-% plot_batch_results_2d(batch_results, path_raw_ideal, params_current);
+plot_batch_results_2d(batch_results, path_raw_ideal, params_current);
 
 % %% ========== 保存结果 ==========
 % save('results/exp1_batch_results.mat', 'batch_results', 'test_points', 'params');

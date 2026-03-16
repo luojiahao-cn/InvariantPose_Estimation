@@ -33,6 +33,7 @@ p_est = p_init;
 % output.message
 %% Stage #2: Estimate for rotation \hat{R}
 [b_p, A_p] = calcFieldAndGradient(p_est, m_pos, m_hat, m_norm);
+err_displacement = norm(A_p) * 30e-3;
 B_matrix = b_p * ones(1, num_sensors);
 B_bar = B_matrix * Q_bar;
 [R_init_est1, R_init_est2] = estimateR(b_bar, B_bar, A_p, X_opt, D_delta, B_delta);
@@ -46,6 +47,7 @@ stats.R_est_init1 = R_init_est1;
 stats.R_est_init2 = R_init_est2;
 stats.R_iter_history = R_PPI.R_iter_history; % 每次迭代的R
 stats.delta_history = R_PPI.delta_history;   % 每次迭代的delta
+stats.err_displacement = err_displacement;
 end
 
 %% ----------------------------Functions-------------------------------  %%

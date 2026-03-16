@@ -107,6 +107,7 @@ result.elm_rot_error = norm(R_elm - R_true, 'fro');
 % 所提算法
 result.ours_pos_error = norm(p_ours - p_true);
 result.ours_rot_error = norm(R_ours - R_true, 'fro');
+result.ours_err_displacement = stats_ours.err_displacement;
 
 % Fischer
 result.fischer_pos_error = norm(p_fischer - p_true);
